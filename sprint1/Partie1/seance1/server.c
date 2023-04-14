@@ -4,10 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_LENGTH 100
 
 int clients[2];
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     /*
         On setup la socket TCP
         while(1){
@@ -30,8 +32,9 @@ int main(int argc, char *argv[]) {
         }
     */
 
-    if(argc!=2){
-        printf("ERROR Argument: nombre d'argument invalide (port)");
+    if (argc != 2)
+    {
+        printf("ERROR Argument: nombre d'argument invalide (port)\n");
         return -1;
     }
 
@@ -41,84 +44,110 @@ int main(int argc, char *argv[]) {
 
     struct sockaddr_in ad;
     ad.sin_family = AF_INET;
-    ad.sin_addr.s_addr = INADDR_ANY ;
-    ad.sin_port = htons(atoi(argv[1])) ;
-    int b = bind(dS, (struct sockaddr*)&ad, sizeof(ad)) ;
-    if (b == -1){
+    ad.sin_addr.s_addr = INADDR_ANY;
+    ad.sin_port = htons(atoi(argv[1]));
+    int b = bind(dS, (struct sockaddr *)&ad, sizeof(ad));
+    if (b == -1)
+    {
         printf("ERROR : bind, le port est peut être déjà utilisé\n");
         exit(0);
     }
     printf("Socket Nommé\n");
 
     int l = listen(dS, 7);
-    if (l == -1){
+    if (l == -1)
+    {
         printf("ERROR : listen\n");
         exit(0);
     }
 
-    while(1){
+    while (1)
+    {
         printf("en attente de connexion\n");
-        if(clients[0]==NULL){
+        if (clients[0] == NULL)
+        {
             struct sockaddr_in aC;
             socklen_t lg = sizeof(struct sockaddr_in);
-            int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
-            clients[0]=dSC;
+            int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
+            clients[0] = dSC;
             printf("Client 1 Connecté\n");
         }
-        if(clients[1]==NULL){
+        if (clients[1] == NULL)
+        {
             struct sockaddr_in aC;
             socklen_t lg = sizeof(struct sockaddr_in);
-            int dSC = accept(dS, (struct sockaddr*) &aC,&lg);
-            clients[1]=dSC;
+            int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
+            clients[1] = dSC;
             printf("Client 2 Connecté\n");
         }
-        
+
         printf("x-----------------------------------x\n");
 
-        char msg [50];
+        char *msg = (char *)malloc(sizeof(char) * MAX_LENGTH + 1);
 
-        while(1){
-            //reception du message du client 1 et envoie au client 2
-            if(recv(clients[0], msg, 50, 0) == -1){
+        while (1)
+        {
+            // reception du message du client 1 et envoie au client 2
+            if (recv(clients[0], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            {
                 printf("ERROR : recv \n");
-                clients[0]=NULL;
+                clients[0] = NULL;
                 break;
             }
+            // print array msg
+            for (int i = 0; i < sizeof(msg); i++)
+            {
+                printf("%c ", msg[i]);
+            }
+            printf("\n");
             printf("| Message reçu : \t \t \t \t%s\n", msg);
-            if(send(clients[1], &msg, 50, 0) == -1){
+            if (send(clients[1], &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            {
                 printf("ERROR : send \n");
-                if(strncmp(msg, "fin", 3)==0) clients[0]=NULL;
-                clients[1]=NULL;
+                if (strncmp(msg, "fin", 3) == 0)
+                    clients[0] = NULL;
+                clients[1] = NULL;
                 break;
             }
             printf("| Message envoye : \t \t \t \t%s\n", msg);
             printf("X-----------------------------------X\n");
-            //si le message est "fin", on reset le tableau client 
-            if(strncmp(msg, "fin", 3)==0){
-                clients[0]=NULL;
-                clients[1]=NULL;
+            // si le message est "fin", on reset le tableau client
+            if (strncmp(msg, "fin", 3) == 0)
+            {
+                clients[0] = NULL;
+                clients[1] = NULL;
                 break;
             }
-            //reception du message du client 2 et envoie au client 1
-            if(recv(clients[1], msg, 50, 0) == -1){
+            // reception du message du client 2 et envoie au client 1
+            if (recv(clients[1], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            {
                 printf("ERROR : recv \n");
-                clients[1]=NULL;
+                clients[1] = NULL;
                 break;
             }
+            // print array msg
+            for (int i = 0; i < sizeof(msg); i++)
+            {
+                printf("%c ", msg[i]);
+            }
+            printf("\n");
             printf("| Message reçu : \t \t \t \t%s\n", msg);
-            if(send(clients[0], &msg, 50, 0) == -1){
+            if (send(clients[0], &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            {
                 printf("ERROR : send \n");
-                if(strncmp(msg, "fin", 3)==0) clients[1]=NULL;
-                clients[0]=NULL;
+                if (strncmp(msg, "fin", 3) == 0)
+                    clients[1] = NULL;
+                clients[0] = NULL;
                 break;
             }
             printf("| Message envoye : \t \t \t \t%s\n", msg);
             printf("X-----------------------------------X\n");
-            
-            //si le message est "fin", on reset le tableau client 
-            if(strncmp(msg, "fin", 3)==0){
-                clients[0]=NULL;
-                clients[1]=NULL;
+
+            // si le message est "fin", on reset le tableau client
+            if (strncmp(msg, "fin", 3) == 0)
+            {
+                clients[0] = NULL;
+                clients[1] = NULL;
                 break;
             }
         }
@@ -130,7 +159,7 @@ int main(int argc, char *argv[]) {
     printf("| Message reçu : \t \t \t \t%s\n", msg);
     printf("|----%d octet recu \n", nb_octet);
     printf("|----%d octet recu depuis le debut de la connexion\n", nb_octet_recu);
-    
+
     if (strncmp(msg, "shutdown", 8) == 0){
         x = 11;
         s = send(dSC, &x, sizeof(int), 0) ;
@@ -152,7 +181,7 @@ int main(int argc, char *argv[]) {
 
     while (strncmp(msg, "shutdown", 8) != 0){
         nb_octet = recv(dSC, msg, 50, 0) ;
-        
+
         if (strncmp(msg, "shutdown", 8) == 0){
         break;
         }
@@ -160,7 +189,7 @@ int main(int argc, char *argv[]) {
         printf("| Message reçu : \t \t \t \t %s\n", msg) ;
         printf("|----%d octet recu \n", nb_octet);
         printf("|----%d octet recu depuis le debut de la connexion\n", nb_octet_recu);
-        
+
         int s = send(dSC, &x, sizeof(int), 0) ;
         if (s == -1){
         printf("ERROR : send\n");
