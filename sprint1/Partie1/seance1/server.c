@@ -83,61 +83,58 @@ int main(int argc, char *argv[])
 
         printf("x-----------------------------------x\n");
 
-        char *msg = (char *)malloc(sizeof(char) * MAX_LENGTH + 1);
+        char *msg = malloc(sizeof(char) * MAX_LENGTH + 1);
 
         while (1)
         {
             // reception du message du client 1 et envoie au client 2
-            if (recv(clients[0], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            if (recv(clients[0], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == 0)
             {
                 printf("ERROR : recv \n");
+                send(clients[1], "fin", sizeof(char) * (MAX_LENGTH + 1), 0);
                 clients[0] = NULL;
+                clients[1] = NULL;
                 break;
             }
-            // print array msg
-            for (int i = 0; i < sizeof(msg); i++)
-            {
-                printf("%c ", msg[i]);
-            }
-            printf("\n");
+            
             printf("| Message reçu : \t \t \t \t%s\n", msg);
-            if (send(clients[1], &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            if (send(clients[1], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == 0)
             {
                 printf("ERROR : send \n");
-                if (strncmp(msg, "fin", 3) == 0)
-                    clients[0] = NULL;
+                send(clients[0], "fin", sizeof(char) * (MAX_LENGTH + 1), 0);
+                clients[0] = NULL;
                 clients[1] = NULL;
+                printf("client 2 déconnecté \n");
                 break;
             }
             printf("| Message envoye : \t \t \t \t%s\n", msg);
             printf("X-----------------------------------X\n");
             // si le message est "fin", on reset le tableau client
-            if (strncmp(msg, "fin", 3) == 0)
+            if (strcmp(msg, "fin") == 0)
             {
                 clients[0] = NULL;
                 clients[1] = NULL;
                 break;
             }
             // reception du message du client 2 et envoie au client 1
-            if (recv(clients[1], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            if (recv(clients[1], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == 0)
             {
                 printf("ERROR : recv \n");
+                send(clients[0], "fin", sizeof(char) * (MAX_LENGTH + 1), 0);
+                clients[0] = NULL;
                 clients[1] = NULL;
                 break;
             }
-            // print array msg
-            for (int i = 0; i < sizeof(msg); i++)
-            {
-                printf("%c ", msg[i]);
-            }
+            
             printf("\n");
             printf("| Message reçu : \t \t \t \t%s\n", msg);
-            if (send(clients[0], &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            if (send(clients[0], msg, sizeof(char) * (MAX_LENGTH + 1), 0) == 0)
             {
                 printf("ERROR : send \n");
-                if (strncmp(msg, "fin", 3) == 0)
-                    clients[1] = NULL;
+                send(clients[1], "fin", sizeof(char) * (MAX_LENGTH + 1), 0);
                 clients[0] = NULL;
+                clients[1] = NULL;
+                printf("client 1 déconnecté \n");
                 break;
             }
             printf("| Message envoye : \t \t \t \t%s\n", msg);

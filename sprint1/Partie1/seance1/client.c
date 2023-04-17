@@ -43,38 +43,38 @@ int main(int argc, char *argv[])
     }
     printf("x-----------------------------------x\n");
 
-    char *msg = (char *)malloc(sizeof(char) * (MAX_LENGTH + 1));
+    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
 
     printf("Taille max message: %d caractères\n", MAX_LENGTH);
 
     while (1)
     {
         if (numClient == 1)
-        {
+        {   
+            printf("Message à envoyer: ");
             fgets(msg, MAX_LENGTH, stdin);
-            // print array msg
-            for (int i = 0; i < strlen(msg); i++)
-            {
-                printf("%c ", msg[i]);
-            }
-            printf("\n");
+            if(msg[strlen(msg)-1=='\n'])
+                msg[strlen(msg)-1] = '\0';
+            
             if (send(dS, msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
-            if (strncmp(msg, "fin", 3) == 0)
+            if (strcmp(msg, "fin") == 0)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
-            if (recv(dS, &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+
+
+            if (recv(dS, msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
             printf("Message reçu: %s\n", msg);
-            if (strncmp(msg, "fin", 3) == 0)
+            if (strcmp(msg, "fin") == 0)
             {
                 shutdown(dS, 2);
                 exit(0);
@@ -82,30 +82,28 @@ int main(int argc, char *argv[])
         }
         if (numClient == 2)
         {
-            if (recv(dS, &msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+            if (recv(dS, msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
             printf("Message reçu: %s\n", msg);
-            if (strncmp(msg, "fin", 3) == 0)
+            if (strcmp(msg, "fin") == 0)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
+            printf("Message à envoyer: ");
             fgets(msg, MAX_LENGTH, stdin);
-            // print array msg
-            for (int i = 0; i < sizeof(msg); i++)
-            {
-                printf("%c ", msg[i]);
-            }
-            printf("\n");
+            if(msg[strlen(msg)-1=='\n'])
+                msg[strlen(msg)-1] = '\0';
+            
             if (send(dS, msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
             {
                 shutdown(dS, 2);
                 exit(0);
             }
-            if (strncmp(msg, "fin", 3) == 0)
+            if (strcmp(msg, "fin") == 0)
             {
                 shutdown(dS, 2);
                 exit(0);
