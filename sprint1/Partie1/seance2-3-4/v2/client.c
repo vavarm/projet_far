@@ -11,16 +11,16 @@ void* sendThread(void* dS){
     int ds = (int) dS;
     char* msg = malloc(sizeof(char)*(MAX_LENGTH+1));
     while(1){
-        printf("Message à envoyer: ");
         fgets(msg, MAX_LENGTH, stdin);
         if(msg[strlen(msg)-1] == '\n'){
             msg[strlen(msg)-1] = '\0';
         }
         if(send(ds, msg, strlen(msg)+1, 0) == -1){
-            printf("ERROR : send \n");
+            printf("❗ ERROR : send \n");
             exit(0);
         }
         if(strcmp(msg, "fin") == 0){
+            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
     }
@@ -31,12 +31,14 @@ void* receiveThread(void* dS){
     char* msg = malloc(sizeof(char)*(MAX_LENGTH+1));
     while(1){
         if(recv(ds, msg, sizeof(char)*(MAX_LENGTH+1), 0) == -1){
-            printf("ERROR : recv \n");
+            printf("❗ ERROR : recv \n");
             exit(0);
         }
+        printf("\33[2K\r");
+        printf("\t\t\t ");
         puts(msg);
         if(strcmp(msg, "fin") == 0){
-            printf("Fin de la connexion\n");
+            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
     }
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
     socklen_t lgA = sizeof(struct sockaddr_in);
     if (connect(dS, (struct sockaddr *)&aS, lgA) == -1)
     {
-        printf("ERROR : erreur de connexion \n");
+        printf("❗ ERROR : erreur de connexion \n");
         exit(0);
     }
     else
@@ -70,8 +72,8 @@ int main(int argc, char *argv[])
         printf("Socket Connecté\n");
     }
     printf("x-----------------------------------x\n");
-
-    printf("Taille max message: %d caractères\n", MAX_LENGTH);
+    printf("Taille max message: %d caractères\n Vous pouvez commencer a discuter \n taper \"fin\" pour mettre fin a la connexion\n", MAX_LENGTH);
+    printf("x-----------------------------------x\n");
 
     pthread_t threadSend;
     pthread_t threadReceive;
