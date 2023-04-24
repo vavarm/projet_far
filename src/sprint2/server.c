@@ -25,24 +25,25 @@ clientConnecte clients[MAX_CLIENTS];
     /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
     En cas d'erreur, retourne 0
 */
-int CommandsManager(char *msg, int index_client);
+int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
     {
-        if (strcmp(msg, "/quit") == 0)
+        if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
         {
             return -1;
         }
-        else if (strcmp(msg, "/list") == 0)
+        else if (strncmp(msg, "/list", sizeof(char) * 5) == 0)
         {
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
+            strcat(list, clients[index_client].pseudo);
             for (int i = 0; i < ind; i++)
             {
-                if (clients[i].dSC != -1)
+                if (clients[i].dSC != -1 && strcmp(clients[i].pseudo, clients[index_client].pseudo) != 0)
                 {
-                    strcat(list, (clients[i]).pseudo);
                     strcat(list, ", ");
+                    strcat(list, clients[i].pseudo);
                 }
             }
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
@@ -52,7 +53,7 @@ int CommandsManager(char *msg, int index_client);
             }
             return 0;
         }
-        else if (strcmp(msg, "/mp") == 0)
+        else if (strncmp(msg, "/mp", sizeof(char) * 3) == 0)
         {
             // get the user to send the message to
             char *message_copy = malloc(sizeof(char) * (MAX_LENGTH + 1));
@@ -91,11 +92,9 @@ int CommandsManager(char *msg, int index_client);
                 }
             }
             // send the private message to the user
-            if (index_user == -1)
+            if (index_user != -1)
             {
-                printf("❗ ERROR : user not found \n");
-                return 0;
-                if (send(clients[index_client].dSC, private_message, strlen(private_message) + 1, 0) <= 0)
+                if (send(clients[index_user].dSC, private_message, strlen(private_message) + 1, 0) <= 0)
                 {
                     printf("❗ ERROR : send \n");
                     return -1;
@@ -181,7 +180,9 @@ void *client(void *ind_client)
         }
         else if (command_status == -1)
         {
-            // TODO: quitter
+            clients[index_client].dSC = -1;
+            printf("|--- Client déconnecté\n");
+            break;
         }
     }
 }
