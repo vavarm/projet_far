@@ -9,13 +9,104 @@
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 
-typedef struct {
+typedef struct
+{
     int dSC;
     char pseudo[PSEUDO_LENGTH];
-}clientConnecte;
+} clientConnecte;
 
 int ind = 0;
 clientConnecte clients[MAX_CLIENTS];
+
+/*
+    Commandes:
+    /quit : quitter le serveur : retourne -1
+    /list : lister les utilisateurs connectés : retourne 0
+    /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
+    En cas d'erreur, retourne 0
+*/
+int CommandsManager(char *msg, int index_client);
+{
+    if (msg[0] == '/')
+    {
+        if (strcmp(msg, "/quit") == 0)
+        {
+            return -1;
+        }
+        else if (strcmp(msg, "/list") == 0)
+        {
+            // return all the users to the client
+            char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
+            for (int i = 0; i < ind; i++)
+            {
+                if (clients[i].dSC != -1)
+                {
+                    strcat(list, (clients[i]).pseudo);
+                    strcat(list, ", ");
+                }
+            }
+            if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
+        else if (strcmp(msg, "/mp") == 0)
+        {
+            // get the user to send the message to
+            char *message_copy = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            char *private_message = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            strcpy(message_copy, msg);
+            char *user_pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            strcpy(user_pseudo, str_token);
+            // get the message
+            str_token = strtok(NULL, "\0");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            strcpy(private_message, str_token);
+            // get the index of the user
+            int index_user = -1;
+            for (int i = 0; i < ind; i++)
+            {
+                if (strcmp(clients[i].pseudo, user_pseudo) == 0)
+                {
+                    index_user = i;
+                    break;
+                }
+            }
+            // send the private message to the user
+            if (index_user == -1)
+            {
+                printf("❗ ERROR : user not found \n");
+                return 0;
+                if (send(clients[index_client].dSC, private_message, strlen(private_message) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+            }
+            return 0;
+        }
+        return 0;
+    }
+    return 1;
+}
 
 /*
 void *clientBroadcast(void *ind_client)
@@ -51,44 +142,49 @@ void *clientBroadcast(void *ind_client)
 }
 */
 
-
-void *client (void *ind_client){
+void *client(void *ind_client)
+{
     int index_client = (int)ind_client; // cast dSc into int
     char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    if (recv((clients[index_client]).dSC, (clients[index_client]).pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0){
+    if (recv((clients[index_client]).dSC, (clients[index_client]).pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
+    {
         printf("❗ ERROR : recv pseudo \n");
-        exit(0);// TODO : remplace par une remise a zero du client + break
+        exit(0); // TODO : remplace par une remise a zero du client + break
     }
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
-    
 
-    while (1){
+    while (1)
+    {
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");
-            exit(0);// TODO :remplacer par une remise a zero du client + break
+            exit(0); // TODO :remplacer par une remise a zero du client + break
         }
 
-        for (int i = 0; i < ind; i++)
+        int command_status = CommandsManager(msg, index_client);
+
+        if (command_status == 1)
         {
-            if (index_client != i)
+            // broadcast message
+            for (int i = 0; i < ind; i++)
             {
-                // printf("%d\n", clients[i]);
-                if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
+                if (index_client != i)
                 {
-                    printf("❗ ERROR : send \n");
-                    exit(0);// TODO :remplacer par une remise a zero du client + break
+                    // printf("%d\n", clients[i]);
+                    if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
+                    {
+                        printf("❗ ERROR : send \n");
+                        exit(0); // TODO :remplacer par une remise a zero du client + break
+                    }
                 }
             }
         }
-        if (strcmp(msg, "fin") == 0)
+        else if (command_status == -1)
         {
-            printf("\n\t🛑 --- FIN DE CONNEXION --- 🛑\n"); // TODO :remplacer par une remise a zero du client + break
-            exit(0);
+            // TODO: quitter
         }
     }
 }
-
 
 int main(int argc, char *argv[])
 {
