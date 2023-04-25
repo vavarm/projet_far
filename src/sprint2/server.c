@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define MAX_CLIENTS 10
 #define MAX_LENGTH 100
@@ -29,7 +30,29 @@ int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
     {
-        if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
+        if (strncmp(msg, "/cmd", sizeof(char) * 4) == 0)
+        {
+            FILE *ptr;
+            char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            ptr = fopen("manual.txt", "r");
+            if (ptr == NULL)
+            {
+                printf("❗ ERROR : fopen \n");
+                return 0;
+            }
+            while (fgets(str, MAX_LENGTH + 1, ptr) != NULL)
+            {
+                strcat(msg, str);
+            }
+            if (send(clients[index_client].dSC, msg, strlen(str) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
         {
             return -1;
         }
@@ -101,7 +124,15 @@ int CommandsManager(char *msg, int index_client)
             }
             return 0;
         }
-        return 0;
+        else
+        {
+            if (send(clients[index_client].dSC, "❗ ERROR : Commande inconnue", strlen("❗ ERROR : Commande inconnue") + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
     }
     return 1;
 }
@@ -223,6 +254,16 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    // change workspace directory to parent directory
+    /*
+    if (chdir("..") == -1)
+    {
+        printf("❗ ERROR : chdir\n");
+        exit(0);
+    }
+    */
+
+    // init clients
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         clients[i].dSC = -1;
