@@ -4,52 +4,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define MAX_CLIENTS 10
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 
-typedef struct {
+// structure of users
+typedef struct
+{
     int dSC;
     char pseudo[PSEUDO_LENGTH];
-}clientConnecte;
+} clientConnecte;
 
+// index to keep track of the number of clients
 int ind = 0;
+// array of clients
 clientConnecte clients[MAX_CLIENTS];
-
-/*
-void *clientBroadcast(void *ind_client)
-{
-    int index_client = (int)ind_client; // cast dSc into int
-    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    while (1)
-    {
-        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
-        {
-            printf("❗ ERROR : recv \n");
-            exit(0);
-        }
-
-        for (int i = 0; i < ind; i++)
-        {
-            if (index_client != i)
-            {
-                // printf("%d\n", clients[i]);
-                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
-                {
-                    printf("❗ ERROR : send \n");
-                    exit(0);
-                }
-            }
-        }
-        if (strcmp(msg, "fin") == 0)
-        {
-            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
-            exit(0);
-        }
-    }
-}
-*/
 
 /*
     Commandes:
@@ -63,7 +34,28 @@ int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
     {
-        if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
+        if (strncmp(msg, "/cmd", sizeof(char) * 4) == 0)
+        {
+            FILE *ptr;
+            char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            ptr = fopen("manual.txt", "r");
+            if (ptr == NULL)
+            {
+                printf("❗ ERROR : fopen \n");
+                return 0;
+            }
+            while (fgets(str, MAX_LENGTH + 1, ptr) != NULL)
+            {
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                sleep(0.1);
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
         {
             return -1;
         }
@@ -75,12 +67,12 @@ int CommandsManager(char *msg, int index_client)
             for (int i = 0; i < ind; i++)
             {
                 if (clients[i].dSC != -1 && strcmp(clients[i].pseudo, clients[index_client].pseudo) != 0)
-                if (clients[i].dSC != -1)
-                {
-                    strcat(list, ", ");
-                    strcat(list, clients[i].pseudo);
-                    strcat(list, " ");
-                }
+                    if (clients[i].dSC != -1)
+                    {
+                        strcat(list, ", ");
+                        strcat(list, clients[i].pseudo);
+                        strcat(list, " ");
+                    }
             }
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
@@ -143,30 +135,38 @@ int CommandsManager(char *msg, int index_client)
     return 1;
 }
 
-void *client (void *ind_client){
+void *client(void *ind_client)
+{
     int index_client = (int)ind_client; // cast dSc into int
     char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
     char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
-    while(1){
+    while (1)
+    {
         int error = 0;
-        if (recv((clients[index_client]).dSC, pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0){
+        if (recv((clients[index_client]).dSC, pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
+        {
             printf("❗ ERROR : recv pseudo \n");
             clients[index_client].dSC = -1;
             break;
         }
-        for (int i = 0; i < ind; i++){
-            if (strcmp(pseudo, (clients[i].pseudo)) == 0){
+        for (int i = 0; i < ind; i++)
+        {
+            if (strcmp(pseudo, (clients[i].pseudo)) == 0)
+            {
                 printf("❗ ERROR : pseudo déjà utilisé \n");
                 error = 1;
-                if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0){
+                if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0)
+                {
                     printf("❗ ERROR : send ko \n");
                     break;
                 }
             }
         }
-        if (error ==0){ 
+        if (error == 0)
+        {
             strcpy((clients[index_client]).pseudo, pseudo);
-            if (send((clients[index_client]).dSC, "ok", strlen("ok") + 1, 0) <= 0){
+            if (send((clients[index_client]).dSC, "ok", strlen("ok") + 1, 0) <= 0)
+            {
                 printf("❗ ERROR : send ok \n");
                 clients[index_client].dSC = -1;
                 break;
@@ -175,7 +175,6 @@ void *client (void *ind_client){
         }
     }
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
-    
 
     while (1)
     {
@@ -200,10 +199,6 @@ void *client (void *ind_client){
                         printf("|--- Client déconnecté\n");
                         break;
                     }
-                    // DEBUG : affichage du message envoyé
-                    /*else{
-                        printf("|--- Message envoyé à \n");
-                    }*/
                 }
             }
         }
@@ -214,9 +209,8 @@ void *client (void *ind_client){
             break;
         }
     }
+    // TODO: shutdown thread by returning a value (do it also in some if statements)
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -248,6 +242,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    // init clients to -1
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         clients[i].dSC = -1;

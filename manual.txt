@@ -1,0 +1,4 @@
+/cmd : list all commands
+/list : list all connected users by their pseudo
+/mp <user> <message> : send a private message to a user
+/quit : disconnect and quit the system
