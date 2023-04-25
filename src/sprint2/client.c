@@ -10,37 +10,51 @@
 
 char pseudo[PSEUDO_LENGTH];
 
-void* sendThread(void* dS){
-    int ds = (int) dS;
-    char* msg = malloc(sizeof(char)*(MAX_LENGTH+1));
-    while(1){
+void *sendThread(void *dS)
+{
+    int ds = (int)dS;
+    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    while (1)
+    {
         fgets(msg, MAX_LENGTH, stdin);
-        if(msg[strlen(msg)-1] == '\n'){
-            msg[strlen(msg)-1] = '\0';
+        if (msg[strlen(msg) - 1] == '\n')
+        {
+            msg[strlen(msg) - 1] = '\0';
         }
-        if(send(ds, msg, strlen(msg)+1, 0) == -1){
+        if (send(ds, msg, strlen(msg) + 1, 0) == -1)
+        {
             printf("❗ ERROR : send \n");
             exit(0);
         }
-        if(strcmp(msg, "fin") == 0){
+        if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
+        {
+            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
+            exit(0);
+        }
+        if (strcmp(msg, "fin") == 0)
+        {
             printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
     }
 }
 
-void* receiveThread(void* dS){
-    int ds = (int) dS;
-    char* msg = malloc(sizeof(char)*(MAX_LENGTH+1));
-    while(1){
-        if(recv(ds, msg, sizeof(char)*(MAX_LENGTH+1), 0) == -1){
+void *receiveThread(void *dS)
+{
+    int ds = (int)dS;
+    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    while (1)
+    {
+        if (recv(ds, msg, sizeof(char) * (MAX_LENGTH + 1), 0) == -1)
+        {
             printf("❗ ERROR : recv \n");
             exit(0);
         }
         printf("\33[2K\r");
         printf("\t\t\t ");
         puts(msg);
-        if(strcmp(msg, "fin") == 0){
+        if (strcmp(msg, "fin") == 0)
+        {
             printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
@@ -77,12 +91,14 @@ int main(int argc, char *argv[])
 
     printf("Entrez votre pseudo : ");
     fgets(pseudo, PSEUDO_LENGTH, stdin);
-    if (pseudo[strlen(pseudo) - 1] == '\n'){
+    if (pseudo[strlen(pseudo) - 1] == '\n')
+    {
         pseudo[strlen(pseudo) - 1] = '\0';
     }
-    if(send(dS, pseudo, strlen(pseudo)+1, 0) == -1){
-            printf("❗ ERROR : send \n");
-            exit(0);
+    if (send(dS, pseudo, strlen(pseudo) + 1, 0) == -1)
+    {
+        printf("❗ ERROR : send \n");
+        exit(0);
     }
 
     printf("x-----------------------------------x\n");
@@ -91,7 +107,7 @@ int main(int argc, char *argv[])
 
     pthread_t threadSend;
     pthread_t threadReceive;
-    pthread_create(&threadSend, NULL, sendThread, (void*)dS);
-    pthread_create(&threadReceive, NULL, receiveThread, (void*)dS);
+    pthread_create(&threadSend, NULL, sendThread, (void *)dS);
+    pthread_create(&threadReceive, NULL, receiveThread, (void *)dS);
     pthread_join(threadReceive, NULL);
 }
