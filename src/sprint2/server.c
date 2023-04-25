@@ -10,13 +10,16 @@
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 
+// structure of users
 typedef struct
 {
     int dSC;
     char pseudo[PSEUDO_LENGTH];
 } clientConnecte;
 
+// index to keep track of the number of clients
 int ind = 0;
+// array of clients
 clientConnecte clients[MAX_CLIENTS];
 
 /*
@@ -34,7 +37,6 @@ int CommandsManager(char *msg, int index_client)
         {
             FILE *ptr;
             char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
-            char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
             ptr = fopen("manual.txt", "r");
             if (ptr == NULL)
             {
@@ -43,12 +45,12 @@ int CommandsManager(char *msg, int index_client)
             }
             while (fgets(str, MAX_LENGTH + 1, ptr) != NULL)
             {
-                strcat(msg, str);
-            }
-            if (send(clients[index_client].dSC, msg, strlen(str) + 1, 0) <= 0)
-            {
-                printf("❗ ERROR : send \n");
-                return -1;
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                sleep(0.1);
             }
             return 0;
         }
@@ -137,40 +139,7 @@ int CommandsManager(char *msg, int index_client)
     return 1;
 }
 
-/*
-void *clientBroadcast(void *ind_client)
-{
-    int index_client = (int)ind_client; // cast dSc into int
-    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    while (1)
-    {
-        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
-        {
-            printf("❗ ERROR : recv \n");
-            exit(0);
-        }
-
-        for (int i = 0; i < ind; i++)
-        {
-            if (index_client != i)
-            {
-                // printf("%d\n", clients[i]);
-                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
-                {
-                    printf("❗ ERROR : send \n");
-                    exit(0);
-                }
-            }
-        }
-        if (strcmp(msg, "fin") == 0)
-        {
-            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
-            exit(0);
-        }
-    }
-}
-*/
-
+// client thread that handles the client's requests or messages
 void *client(void *ind_client)
 {
     int index_client = (int)ind_client; // cast dSc into int
@@ -179,7 +148,7 @@ void *client(void *ind_client)
     {
         printf("❗ ERROR : recv pseudo \n");
         clients[index_client].dSC = -1;
-        // break;
+        // TODO: shutdown thread by returning a value
     }
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
 
@@ -208,10 +177,6 @@ void *client(void *ind_client)
                         printf("|--- Client déconnecté\n");
                         break;
                     }
-                    // DEBUG : affichage du message envoyé
-                    /*else{
-                        printf("|--- Message envoyé à \n");
-                    }*/
                 }
             }
         }
@@ -222,6 +187,7 @@ void *client(void *ind_client)
             break;
         }
     }
+    // TODO: shutdown thread by returning a value
 }
 
 int main(int argc, char *argv[])
@@ -254,16 +220,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // change workspace directory to parent directory
-    /*
-    if (chdir("..") == -1)
-    {
-        printf("❗ ERROR : chdir\n");
-        exit(0);
-    }
-    */
-
-    // init clients
+    // init clients to -1
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         clients[i].dSC = -1;
