@@ -23,12 +23,47 @@ int ind = 0;
 clientConnecte clients[MAX_CLIENTS];
 
 /*
+void *clientBroadcast(void *ind_client)
+{
+    int index_client = (int)ind_client; // cast dSc into int
+    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    while (1)
+    {
+        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
+        {
+            printf("❗ ERROR : recv \n");
+            exit(0);
+        }
+
+        for (int i = 0; i < ind; i++)
+        {
+            if (index_client != i)
+            {
+                // printf("%d\n", clients[i]);
+                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    exit(0);
+                }
+            }
+        }
+        if (strcmp(msg, "fin") == 0)
+        {
+            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
+            exit(0);
+        }
+    }
+}
+*/
+
+/*
     Commandes:
     /quit : quitter le serveur : retourne -1
     /list : lister les utilisateurs connectés : retourne 0
     /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
     En cas d'erreur, retourne 0
 */
+
 int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
@@ -62,13 +97,16 @@ int CommandsManager(char *msg, int index_client)
         {
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
+            strcat(list, clients[index_client].pseudo);
             for (int i = 0; i < ind; i++)
             {
-                if (clients[i].dSC != -1)
-                {
-                    strcat(list, clients[i].pseudo);
-                    strcat(list, " ");
-                }
+                if (clients[i].dSC != -1 && strcmp(clients[i].pseudo, clients[index_client].pseudo) != 0)
+                    if (clients[i].dSC != -1)
+                    {
+                        strcat(list, ", ");
+                        strcat(list, clients[i].pseudo);
+                        strcat(list, " ");
+                    }
             }
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
@@ -126,29 +164,83 @@ int CommandsManager(char *msg, int index_client)
             }
             return 0;
         }
-        else
-        {
-            if (send(clients[index_client].dSC, "❗ ERROR : Commande inconnue", strlen("❗ ERROR : Commande inconnue") + 1, 0) <= 0)
-            {
-                printf("❗ ERROR : send \n");
-                return -1;
-            }
-            return 0;
-        }
+        return 0;
     }
     return 1;
 }
 
-// client thread that handles the client's requests or messages
+/*
+void *clientBroadcast(void *ind_client)
+{
+    int index_client = (int)ind_client; // cast dSc into int
+    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    while (1)
+    {
+        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
+        {
+            printf("❗ ERROR : recv \n");
+            exit(0);
+        }
+
+        for (int i = 0; i < ind; i++)
+        {
+            if (index_client != i)
+            {
+                // printf("%d\n", clients[i]);
+                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    exit(0);
+                }
+            }
+        }
+        if (strcmp(msg, "fin") == 0)
+        {
+            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
+            exit(0);
+        }
+    }
+}
+*/
+
 void *client(void *ind_client)
 {
     int index_client = (int)ind_client; // cast dSc into int
     char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    if (recv((clients[index_client]).dSC, (clients[index_client]).pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
+    char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
+    while (1)
     {
-        printf("❗ ERROR : recv pseudo \n");
-        clients[index_client].dSC = -1;
-        // TODO: shutdown thread by returning a value
+        int error = 0;
+        if (recv((clients[index_client]).dSC, pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
+        {
+            printf("❗ ERROR : recv pseudo \n");
+            clients[index_client].dSC = -1;
+            break;
+        }
+        for (int i = 0; i < ind; i++)
+        {
+            if (strcmp(pseudo, (clients[i].pseudo)) == 0)
+            {
+                printf("❗ ERROR : pseudo déjà utilisé \n");
+                error = 1;
+                if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send ko \n");
+                    break;
+                }
+            }
+        }
+        if (error == 0)
+        {
+            strcpy((clients[index_client]).pseudo, pseudo);
+            if (send((clients[index_client]).dSC, "ok", strlen("ok") + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send ok \n");
+                clients[index_client].dSC = -1;
+                break;
+            }
+            break;
+        }
     }
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
 
@@ -161,9 +253,7 @@ void *client(void *ind_client)
             printf("|--- Client déconnecté\n");
             break;
         }
-
         int command_status = CommandsManager(msg, index_client);
-
         if (command_status == 1)
         {
             for (int i = 0; i < ind; i++)

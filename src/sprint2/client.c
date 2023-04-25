@@ -31,11 +31,6 @@ void *sendThread(void *dS)
             printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
-        if (strcmp(msg, "fin") == 0)
-        {
-            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
-            exit(0);
-        }
     }
 }
 
@@ -88,17 +83,32 @@ int main(int argc, char *argv[])
     {
         printf("Socket Connecté\n");
     }
-
-    printf("Entrez votre pseudo : ");
-    fgets(pseudo, PSEUDO_LENGTH, stdin);
-    if (pseudo[strlen(pseudo) - 1] == '\n')
-    {
-        pseudo[strlen(pseudo) - 1] = '\0';
-    }
-    if (send(dS, pseudo, strlen(pseudo) + 1, 0) == -1)
-    {
-        printf("❗ ERROR : send \n");
-        exit(0);
+    while (1){
+        printf("Entrez votre pseudo : ");
+        fgets(pseudo, PSEUDO_LENGTH, stdin);
+        if (pseudo[strlen(pseudo) - 1] == '\n')
+        {
+            pseudo[strlen(pseudo) - 1] = '\0';
+        }
+        if (send(dS, pseudo, strlen(pseudo) + 1, 0) == -1)
+        {
+            printf("❗ ERROR : send \n");
+            exit(0);
+        }
+        char reponse[2];
+        if (recv(dS, reponse, sizeof(char) * (2 + 1), 0) == -1){
+            printf("❗ ERROR : recv \n");
+            exit(0);
+        }
+        if (strcmp(reponse, "ok") == 0)
+        {
+            printf("Pseudo accepté\n");
+            break;
+        }
+        else
+        {
+            printf("Pseudo refusé\n");
+        }
     }
 
     printf("x-----------------------------------x\n");
