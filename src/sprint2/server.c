@@ -148,12 +148,8 @@ void *client(void *ind_client)
     if (recv((clients[index_client]).dSC, (clients[index_client]).pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
     {
         printf("❗ ERROR : recv pseudo \n");
-<<<<<<< HEAD
-        exit(0); // TODO : remplace par une remise a zero du client + break
-=======
         clients[index_client].dSC = -1;
-        //break;
->>>>>>> main
+        // break;
     }
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
 
@@ -162,66 +158,39 @@ void *client(void *ind_client)
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");
-<<<<<<< HEAD
-            exit(0); // TODO :remplacer par une remise a zero du client + break
-=======
             clients[index_client].dSC = -1;
             printf("|--- Client déconnecté\n");
             break;
-        }
-
-        if (strcmp(msg, "fin") == 0)
-        {
-            //printf("\n\t🛑 --- FIN DE CONNEXION --- 🛑\n"); 
-            clients[index_client].dSC = -1;
-            printf("|--- Client déconnecté\n");
-            break;
->>>>>>> main
         }
 
         int command_status = CommandsManager(msg, index_client);
 
         if (command_status == 1)
         {
-<<<<<<< HEAD
-            // broadcast message
             for (int i = 0; i < ind; i++)
             {
-                if (index_client != i)
+                if (index_client != i && clients[i].dSC != -1)
                 {
-                    // printf("%d\n", clients[i]);
                     if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
                     {
                         printf("❗ ERROR : send \n");
-                        exit(0); // TODO :remplacer par une remise a zero du client + break
+                        clients[index_client].dSC = -1;
+                        printf("|--- Client déconnecté\n");
+                        break;
                     }
-=======
-            if (index_client != i && clients[i].dSC != -1)
-            {
-                if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
-                {
-                    printf("❗ ERROR : send \n");
-                    clients[index_client].dSC = -1;
-                    printf("|--- Client déconnecté\n");
-                    break;
->>>>>>> main
+                    // DEBUG : affichage du message envoyé
+                    /*else{
+                        printf("|--- Message envoyé à \n");
+                    }*/
                 }
-                // DEBUG : affichage du message envoyé
-                /*else{
-                    printf("|--- Message envoyé à \n");
-                }*/
-                
             }
         }
-<<<<<<< HEAD
         else if (command_status == -1)
         {
             clients[index_client].dSC = -1;
             printf("|--- Client déconnecté\n");
             break;
         }
-=======
->>>>>>> main
     }
 }
 
