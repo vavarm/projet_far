@@ -23,40 +23,6 @@ int ind = 0;
 clientConnecte clients[MAX_CLIENTS];
 
 /*
-void *clientBroadcast(void *ind_client)
-{
-    int index_client = (int)ind_client; // cast dSc into int
-    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    while (1)
-    {
-        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
-        {
-            printf("❗ ERROR : recv \n");
-            exit(0);
-        }
-
-        for (int i = 0; i < ind; i++)
-        {
-            if (index_client != i)
-            {
-                // printf("%d\n", clients[i]);
-                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
-                {
-                    printf("❗ ERROR : send \n");
-                    exit(0);
-                }
-            }
-        }
-        if (strcmp(msg, "fin") == 0)
-        {
-            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
-            exit(0);
-        }
-    }
-}
-*/
-
-/*
     Commandes:
     /quit : quitter le serveur : retourne -1
     /list : lister les utilisateurs connectés : retourne 0
@@ -169,40 +135,6 @@ int CommandsManager(char *msg, int index_client)
     return 1;
 }
 
-/*
-void *clientBroadcast(void *ind_client)
-{
-    int index_client = (int)ind_client; // cast dSc into int
-    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
-    while (1)
-    {
-        if (recv(clients[index_client], msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
-        {
-            printf("❗ ERROR : recv \n");
-            exit(0);
-        }
-
-        for (int i = 0; i < ind; i++)
-        {
-            if (index_client != i)
-            {
-                // printf("%d\n", clients[i]);
-                if (send(clients[i], msg, strlen(msg) + 1, 0) <= 0)
-                {
-                    printf("❗ ERROR : send \n");
-                    exit(0);
-                }
-            }
-        }
-        if (strcmp(msg, "fin") == 0)
-        {
-            printf("🛑 --- FIN DE CONNEXION --- 🛑\n");
-            exit(0);
-        }
-    }
-}
-*/
-
 void *client(void *ind_client)
 {
     int index_client = (int)ind_client; // cast dSc into int
@@ -277,7 +209,7 @@ void *client(void *ind_client)
             break;
         }
     }
-    // TODO: shutdown thread by returning a value
+    // TODO: shutdown thread by returning a value (do it also in some if statements)
 }
 
 int main(int argc, char *argv[])
