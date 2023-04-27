@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         clients[i].dSC = -1;
+        clients[i].pseudo[0] = '\0';
     }
 
     printf("En attente de connexion\n");
