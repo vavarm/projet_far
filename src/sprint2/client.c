@@ -48,7 +48,7 @@ void *receiveThread(void *dS)
         printf("\33[2K\r");
         printf("\t\t\t ");
         puts(msg);
-        if (strcmp(msg, "fin") == 0)
+        if (strncmp(msg, "/quit", sizeof(char) * 5) == 0)
         {
             printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
@@ -83,7 +83,8 @@ int main(int argc, char *argv[])
     {
         printf("Socket Connecté\n");
     }
-    while (1){
+    while (1)
+    {
         printf("Entrez votre pseudo : ");
         fgets(pseudo, PSEUDO_LENGTH, stdin);
         if (pseudo[strlen(pseudo) - 1] == '\n')
@@ -96,7 +97,8 @@ int main(int argc, char *argv[])
             exit(0);
         }
         char reponse[2];
-        if (recv(dS, reponse, sizeof(char) * (2 + 1), 0) == -1){
+        if (recv(dS, reponse, sizeof(char) * (2 + 1), 0) == -1)
+        {
             printf("❗ ERROR : recv \n");
             exit(0);
         }
