@@ -152,7 +152,7 @@ void *client(void *ind_client)
         }
         for (int i = 0; i < ind; i++)
         {
-            if (strcmp(pseudo, (clients[i].pseudo)) == 0)
+            if (strcmp(pseudo, (clients[i].pseudo)) == 0 || strcmp(pseudo, "server") == 0 || strcmp(pseudo, "Server") == 0 || strcmp(pseudo, "SERVER") == 0 || strcmp(pseudo, "all") == 0 || strcmp(pseudo, "All") == 0 || strcmp(pseudo, "ALL") == 0 || strcmp(pseudo, "broadcast") == 0 || strcmp(pseudo, "Broadcast") == 0 || strcmp(pseudo, "BROADCAST") == 0 || strlen(pseudo) == 0)
             {
                 printf("❗ ERROR : pseudo déjà utilisé \n");
                 error = 1;
