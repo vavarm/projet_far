@@ -147,6 +147,7 @@ void *client(void *ind_client)
         {
             printf("❗ ERROR : recv pseudo \n");
             clients[index_client].dSC = -1;
+            clients[index_client].pseudo[0] = '\0';
             break;
         }
         for (int i = 0; i < ind; i++)
@@ -158,6 +159,8 @@ void *client(void *ind_client)
                 if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0)
                 {
                     printf("❗ ERROR : send ko \n");
+                    clients[index_client].dSC = -1;
+                    clients[index_client].pseudo[0] = '\0';
                     break;
                 }
             }
@@ -169,6 +172,7 @@ void *client(void *ind_client)
             {
                 printf("❗ ERROR : send ok \n");
                 clients[index_client].dSC = -1;
+                clients[index_client].pseudo[0] = '\0';
                 break;
             }
             break;
@@ -182,6 +186,7 @@ void *client(void *ind_client)
         {
             printf("❗ ERROR : recv \n");
             clients[index_client].dSC = -1;
+            clients[index_client].pseudo[0] = '\0';
             printf("|--- Client déconnecté\n");
             break;
         }
@@ -196,6 +201,7 @@ void *client(void *ind_client)
                     {
                         printf("❗ ERROR : send \n");
                         clients[index_client].dSC = -1;
+                        clients[index_client].pseudo[0] = '\0';
                         printf("|--- Client déconnecté\n");
                         break;
                     }
@@ -205,6 +211,7 @@ void *client(void *ind_client)
         else if (command_status == -1)
         {
             clients[index_client].dSC = -1;
+            clients[index_client].pseudo[0] = '\0';
             printf("|--- Client déconnecté\n");
             break;
         }
