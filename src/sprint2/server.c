@@ -173,6 +173,7 @@ void *client(void *ind)
             break;
         }
     }
+    printf("👤 %s connected, with dSC = %d\n", clients[index_client].pseudo, clients[index_client].dSC);
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
 
     while (1)
@@ -261,19 +262,22 @@ int main(int argc, char *argv[])
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
         int ind = 0;
         int trouve = -1;
-        while (ind < MAX_CLIENTS && !trouve)
-            ;
+        while (ind <= MAX_CLIENTS && trouve == -1)
         {
             if (clients[ind].dSC == -1)
             {
                 clients[ind].dSC = dSC;
-                trouve = 1;
+                printf("dSC = %d\n", clients[ind].dSC);
+                trouve = 0;
             }
             else
             {
+                printf("place %d déjà prise\n", ind);
                 ind++;
             }
         }
+
+        printf("Nouvelle conexion provenant de dSC: %d\n", dSC);
 
         pthread_t thread;
         pthread_create(&thread, NULL, client, (void *)ind);
