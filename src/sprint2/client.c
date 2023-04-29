@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     }
 
     printf("x-----------------------------------x\n");
-    printf("Taille max message: %d caractères\n Vous pouvez commencer a discuter \n taper \"fin\" pour mettre fin a la connexion\n", MAX_LENGTH);
+    printf("Taille max message: %d caractères\n Vous pouvez commencer a discuter \n taper \"/quit\" pour mettre fin a la connexion ou \"/cmd\" pour obtenir la liste des commandes\n", MAX_LENGTH);
     printf("x-----------------------------------x\n");
 
     pthread_t threadSend;
