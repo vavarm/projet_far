@@ -178,6 +178,7 @@ void *client(void *ind)
 
     while (1)
     {
+        printf("index_client: %d, dSC: %d\n", index_client, clients[index_client].dSC);
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");
