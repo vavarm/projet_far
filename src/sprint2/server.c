@@ -63,16 +63,13 @@ int CommandsManager(char *msg, int index_client)
         {
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
-            strcat(list, clients[index_client].pseudo);
             for (int i = 0; i < ind; i++)
             {
-                if (clients[i].dSC != -1 && strcmp(clients[i].pseudo, clients[index_client].pseudo) != 0)
-                    if (clients[i].dSC != -1)
-                    {
-                        strcat(list, ", ");
-                        strcat(list, clients[i].pseudo);
-                        strcat(list, " ");
-                    }
+                if (clients[i].dSC != -1)
+                {
+                    strcat(list, clients[i].pseudo);
+                    strcat(list, " ");
+                }
             }
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
