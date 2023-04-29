@@ -17,8 +17,6 @@ typedef struct
     char pseudo[PSEUDO_LENGTH];
 } clientConnecte;
 
-// index to keep track of the number of clients
-int ind = 0;
 // array of clients
 clientConnecte clients[MAX_CLIENTS];
 
@@ -63,7 +61,7 @@ int CommandsManager(char *msg, int index_client)
         {
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
-            for (int i = 0; i < ind; i++)
+            for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (clients[i].dSC != -1)
                 {
@@ -108,7 +106,7 @@ int CommandsManager(char *msg, int index_client)
             strcpy(private_message, str_token);
             // get the index of the user
             int index_user = -1;
-            for (int i = 0; i < ind; i++)
+            for (int i = 0; i < MAX_LENGTH; i++)
             {
                 if (strcmp(clients[i].pseudo, user_pseudo) == 0)
                 {
@@ -132,9 +130,9 @@ int CommandsManager(char *msg, int index_client)
     return 1;
 }
 
-void *client(void *ind_client)
+void *client(void *ind)
 {
-    int index_client = (int)ind_client; // cast dSc into int
+    int index_client = (int)ind; // cast dSc into int
     char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
     char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
     while (1)
@@ -147,11 +145,11 @@ void *client(void *ind_client)
             clients[index_client].pseudo[0] = '\0';
             break;
         }
-        for (int i = 0; i < ind; i++)
+        for (int i = 0; i < MAX_CLIENTS; i++)
         {
             if (strcmp(pseudo, (clients[i].pseudo)) == 0 || strcmp(pseudo, "server") == 0 || strcmp(pseudo, "Server") == 0 || strcmp(pseudo, "SERVER") == 0 || strcmp(pseudo, "all") == 0 || strcmp(pseudo, "All") == 0 || strcmp(pseudo, "ALL") == 0 || strcmp(pseudo, "broadcast") == 0 || strcmp(pseudo, "Broadcast") == 0 || strcmp(pseudo, "BROADCAST") == 0 || strlen(pseudo) == 0)
             {
-                printf("❗ ERROR : pseudo déjà utilisé \n");
+                printf("❗ ERROR : pseudo déjà utilisé ou non valide\n");
                 error = 1;
                 if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0)
                 {
@@ -190,7 +188,7 @@ void *client(void *ind_client)
         int command_status = CommandsManager(msg, index_client);
         if (command_status == 1)
         {
-            for (int i = 0; i < ind; i++)
+            for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (index_client != i && clients[i].dSC != -1)
                 {
@@ -261,11 +259,24 @@ int main(int argc, char *argv[])
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
-        clients[ind].dSC = dSC;
+        int ind = 0;
+        int trouve = -1;
+        while (ind < MAX_CLIENTS && !trouve)
+            ;
+        {
+            if (clients[ind].dSC == -1)
+            {
+                clients[ind].dSC = dSC;
+                trouve = 1;
+            }
+            else
+            {
+                ind++;
+            }
+        }
 
         pthread_t thread;
         pthread_create(&thread, NULL, client, (void *)ind);
         printf("|--- Client Connecté\n");
-        ind++;
     }
 }
