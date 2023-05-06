@@ -20,6 +20,9 @@ typedef struct
 // array of clients
 clientConnecte clients[MAX_CLIENTS];
 
+// mutex to protect the array of clients
+pthread_mutex_t mutex_clients;
+
 /*
     Commandes:
     /quit : quitter le serveur : retourne -1
@@ -61,6 +64,8 @@ int CommandsManager(char *msg, int index_client)
         {
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
+            pthread_mutex_lock(&mutex_clients);
+            /* début section critique */
             for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (clients[i].dSC != -1)
@@ -69,6 +74,8 @@ int CommandsManager(char *msg, int index_client)
                     strcat(list, " ");
                 }
             }
+            /* fin section critique */
+            pthread_mutex_unlock(&mutex_clients);
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
                 printf("❗ ERROR : send \n");
@@ -79,6 +86,7 @@ int CommandsManager(char *msg, int index_client)
         else if (strncmp(msg, "/mp", sizeof(char) * 3) == 0)
         {
             // get the user to send the message to
+            // TODO: check if the user exists and send an error message if not
             char *message_copy = malloc(sizeof(char) * (MAX_LENGTH + 1));
             char *private_message = malloc(sizeof(char) * (MAX_LENGTH + 1));
             strcpy(message_copy, msg);
@@ -106,7 +114,9 @@ int CommandsManager(char *msg, int index_client)
             strcpy(private_message, str_token);
             // get the index of the user
             int index_user = -1;
-            for (int i = 0; i < MAX_LENGTH; i++)
+            pthread_mutex_lock(&mutex_clients);
+            /* début section critique */
+            for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (strcmp(clients[i].pseudo, user_pseudo) == 0)
                 {
@@ -114,6 +124,8 @@ int CommandsManager(char *msg, int index_client)
                     break;
                 }
             }
+            /* fin section critique */
+            pthread_mutex_unlock(&mutex_clients);
             // send the private message to the user
             if (index_user != -1)
             {
@@ -145,6 +157,8 @@ void *client(void *ind)
             clients[index_client].pseudo[0] = '\0';
             break;
         }
+        pthread_mutex_lock(&mutex_clients);
+        /* début section critique */
         for (int i = 0; i < MAX_CLIENTS; i++)
         {
             if (strcmp(pseudo, (clients[i].pseudo)) == 0 || strcmp(pseudo, "server") == 0 || strcmp(pseudo, "Server") == 0 || strcmp(pseudo, "SERVER") == 0 || strcmp(pseudo, "all") == 0 || strcmp(pseudo, "All") == 0 || strcmp(pseudo, "ALL") == 0 || strcmp(pseudo, "broadcast") == 0 || strcmp(pseudo, "Broadcast") == 0 || strcmp(pseudo, "BROADCAST") == 0 || strlen(pseudo) == 0)
@@ -160,6 +174,8 @@ void *client(void *ind)
                 }
             }
         }
+        /* fin section critique */
+        pthread_mutex_unlock(&mutex_clients);
         if (error == 0)
         {
             strcpy((clients[index_client]).pseudo, pseudo);
@@ -188,8 +204,10 @@ void *client(void *ind)
             break;
         }
         int command_status = CommandsManager(msg, index_client);
-        if (command_status == 1)
+        if (command_status == 1) // then it's a message to broadcast
         {
+            pthread_mutex_lock(&mutex_clients);
+            /* début section critique */
             for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (index_client != i && clients[i].dSC != -1)
@@ -204,6 +222,8 @@ void *client(void *ind)
                     }
                 }
             }
+            /* fin section critique */
+            pthread_mutex_unlock(&mutex_clients);
         }
         else if (command_status == -1)
         {
@@ -253,6 +273,13 @@ int main(int argc, char *argv[])
         clients[i].pseudo[0] = '\0';
     }
 
+    // init mutex
+    if (pthread_mutex_init(&mutex_clients, NULL) != 0)
+    {
+        printf("❗ ERROR : pthread_mutex_init\n");
+        exit(0);
+    }
+
     printf("En attente de connexion\n");
     printf("... \n");
 
@@ -263,6 +290,8 @@ int main(int argc, char *argv[])
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
         int ind = 0;
         int trouve = -1;
+        pthread_mutex_lock(&mutex_clients);
+        /* début section critique */
         while (ind <= MAX_CLIENTS && trouve == -1)
         {
             if (clients[ind].dSC == -1)
@@ -277,6 +306,8 @@ int main(int argc, char *argv[])
                 ind++;
             }
         }
+        /* fin section critique */
+        pthread_mutex_unlock(&mutex_clients);
 
         printf("Nouvelle conexion provenant de dSC: %d\n", dSC);
 
@@ -284,4 +315,8 @@ int main(int argc, char *argv[])
         pthread_create(&thread, NULL, client, (void *)ind);
         printf("|--- Client Connecté\n");
     }
+    // destroy mutex
+    pthread_mutex_destroy(&mutex_clients);
+
+    return 0;
 }
