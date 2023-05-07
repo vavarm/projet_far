@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
-        sem_wait(&semaphore);
+        // sem_wait(&semaphore);
         int ind = 0;
         int trouve = -1;
         pthread_mutex_lock(&mutex_clients);
