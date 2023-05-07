@@ -96,6 +96,7 @@ int main(int argc, char *argv[])
             printf("❗ ERROR : send \n");
             exit(0);
         }
+        printf("En attente de la réponse du serveur...\n");
         char reponse[2];
         if (recv(dS, reponse, sizeof(char) * (2 + 1), 0) == -1)
         {
