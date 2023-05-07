@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 2
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 
@@ -24,8 +24,21 @@ clientConnecte clients[MAX_CLIENTS];
 // mutex that protect the array of clients
 pthread_mutex_t mutex_clients;
 
-// semaphore that manage the number of clients connected
+// semaphore that manages the number of clients connected
 sem_t semaphore;
+
+// TODO: add a dissconnect status and use it in pthread_exit()
+void disconnectClient(int index_client)
+{
+    printf("👤 %s disconnected, with dSC = %d\n", clients[index_client].pseudo, clients[index_client].dSC);
+    // put the default values in the array
+    clients[index_client].dSC = -1;
+    clients[index_client].pseudo[0] = '\0';
+    // release the semaphore to accept new clients
+    sem_post(&semaphore);
+    // kill the thread
+    pthread_exit(NULL);
+}
 
 /*
     Commandes:
@@ -34,7 +47,6 @@ sem_t semaphore;
     /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
     En cas d'erreur, retourne 0
 */
-
 int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
@@ -157,9 +169,7 @@ void *client(void *ind)
         if (recv((clients[index_client]).dSC, pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv pseudo \n");
-            clients[index_client].dSC = -1;
-            clients[index_client].pseudo[0] = '\0';
-            break;
+            disconnectClient(index_client);
         }
         pthread_mutex_lock(&mutex_clients);
         /* début section critique */
@@ -172,9 +182,7 @@ void *client(void *ind)
                 if (send((clients[index_client]).dSC, "ko", strlen("ko") + 1, 0) <= 0)
                 {
                     printf("❗ ERROR : send ko \n");
-                    clients[index_client].dSC = -1;
-                    clients[index_client].pseudo[0] = '\0';
-                    break;
+                    disconnectClient(index_client);
                 }
             }
         }
@@ -186,10 +194,9 @@ void *client(void *ind)
             if (send((clients[index_client]).dSC, "ok", strlen("ok") + 1, 0) <= 0)
             {
                 printf("❗ ERROR : send ok \n");
-                clients[index_client].dSC = -1;
-                clients[index_client].pseudo[0] = '\0';
-                break;
+                disconnectClient(index_client);
             }
+            // pseudo accepted: quit the loop
             break;
         }
     }
@@ -202,10 +209,7 @@ void *client(void *ind)
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");
-            clients[index_client].dSC = -1;
-            clients[index_client].pseudo[0] = '\0';
-            printf("|--- Client déconnecté\n");
-            break;
+            disconnectClient(index_client);
         }
         int command_status = CommandsManager(msg, index_client);
         if (command_status == 1) // then it's a message to broadcast
@@ -219,10 +223,7 @@ void *client(void *ind)
                     if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
                     {
                         printf("❗ ERROR : send \n");
-                        clients[index_client].dSC = -1;
-                        clients[index_client].pseudo[0] = '\0';
-                        printf("|--- Client déconnecté\n");
-                        break;
+                        disconnectClient(index_client);
                     }
                 }
             }
@@ -231,10 +232,7 @@ void *client(void *ind)
         }
         else if (command_status == -1)
         {
-            clients[index_client].dSC = -1;
-            clients[index_client].pseudo[0] = '\0';
-            printf("|--- Client déconnecté\n");
-            break;
+            disconnectClient(index_client);
         }
     }
     // TODO: shutdown thread by returning a value (do it also in some if statements)
@@ -270,7 +268,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // init clients to -1
+    // init clients to default values
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         clients[i].dSC = -1;
@@ -295,7 +293,8 @@ int main(int argc, char *argv[])
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
-        // sem_wait(&semaphore);
+        // wait for a client to disconnect if the number of clients connected is equal to MAX_CLIENTS
+        sem_wait(&semaphore);
         int ind = 0;
         int trouve = -1;
         pthread_mutex_lock(&mutex_clients);
