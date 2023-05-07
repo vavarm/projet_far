@@ -5,6 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <semaphore.h>
 
 #define MAX_CLIENTS 10
 #define MAX_LENGTH 100
@@ -20,8 +21,11 @@ typedef struct
 // array of clients
 clientConnecte clients[MAX_CLIENTS];
 
-// mutex to protect the array of clients
+// mutex that protect the array of clients
 pthread_mutex_t mutex_clients;
+
+// semaphore that manage the number of clients connected
+sem_t semaphore;
 
 /*
     Commandes:
@@ -280,6 +284,9 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    // init semaphore
+    sem_init(&semaphore, 0, MAX_CLIENTS);
+
     printf("En attente de connexion\n");
     printf("... \n");
 
@@ -288,6 +295,7 @@ int main(int argc, char *argv[])
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
+        sem_wait(&semaphore);
         int ind = 0;
         int trouve = -1;
         pthread_mutex_lock(&mutex_clients);
