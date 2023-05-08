@@ -4,12 +4,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <signal.h>
 
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 
 char pseudo[PSEUDO_LENGTH];
+int dS;
 
+void signalHandler(int sig)
+{
+    if (sig == SIGINT)
+    {
+        char *msg = "/quit";
+        if (send(dS, msg, strlen(msg) + 1, 0) == -1)
+        {
+            printf("❗ ERROR : send Ctrl+C\n");
+            exit(0);
+        }
+        printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
+        exit(0);
+    }
+}
 void *sendThread(void *dS)
 {
     int ds = (int)dS;
@@ -66,7 +83,7 @@ int main(int argc, char *argv[])
     }
 
     printf("Début programme\n");
-    int dS = socket(PF_INET, SOCK_STREAM, 0);
+    dS = socket(PF_INET, SOCK_STREAM, 0);
     printf("Socket Créé\n");
 
     struct sockaddr_in aS;
@@ -83,6 +100,9 @@ int main(int argc, char *argv[])
     {
         printf("Socket Connecté\n");
     }
+
+    signal(SIGINT, signalHandler);
+
     while (1)
     {
         printf("Entrez votre pseudo : ");
