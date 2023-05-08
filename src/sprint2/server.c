@@ -7,10 +7,13 @@
 #include <unistd.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #define MAX_CLIENTS 2
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
+
+volatile sig_atomic_t keepRunning = true;
 
 // structure of users
 typedef struct
@@ -164,7 +167,7 @@ void *client(void *ind)
     int index_client = (int)ind; // cast dSc into int
     char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
     char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
-    while (1)
+    while (keepRunning)
     {
         int error = 0;
         if (recv((clients[index_client]).dSC, pseudo, sizeof(char) * (PSEUDO_LENGTH + 1), 0) <= 0)
@@ -237,11 +240,17 @@ void *client(void *ind)
         }
     }
     // TODO: shutdown thread by returning a value (do it also in some if statements)
+    pthread_exit(NULL);
 }
-void signalHandler(int sig){
-    if (sig == SIGINT){
-        for (int i = 0; i < MAX_CLIENTS; i++){
-            if (send(clients[i].dSC, "/quit", strlen("/quit") + 1, 0) <= 0){
+void signalHandler(int sig)
+{
+    if (sig == SIGINT)
+    {
+        keepRunning = false;
+        for (int i = 0; i < MAX_CLIENTS; i++)
+        {
+            if (send(clients[i].dSC, "/quit", strlen("/quit") + 1, 0) <= 0)
+            {
                 printf("❗ ERROR : send \n");
                 clients[i].dSC = -1;
                 clients[i].pseudo[0] = '\0';
@@ -253,7 +262,6 @@ void signalHandler(int sig){
         exit(0);
     }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -304,7 +312,7 @@ int main(int argc, char *argv[])
 
     printf("En attente de connexion\n");
     printf("... \n");
-    
+
     signal(SIGINT, signalHandler);
     while (1)
     {
