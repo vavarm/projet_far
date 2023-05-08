@@ -121,12 +121,19 @@ int main(int argc, char *argv[])
         if (recv(dS, reponse, sizeof(char) * (2 + 1), 0) == -1)
         {
             printf("❗ ERROR : recv \n");
+            printf("Connexion interrompue avec le serveur\n");
+            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
         if (strcmp(reponse, "ok") == 0)
         {
             printf("Pseudo accepté\n");
             break;
+        }
+        else if (strncmp(reponse, "/quit", sizeof(char) * 5) == 0 && strlen(reponse) == 5)
+        {
+            printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
+            exit(0);
         }
         else
         {
