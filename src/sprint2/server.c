@@ -44,6 +44,43 @@ void disconnectClient(int index_client)
     pthread_exit(NULL);
 }
 
+int getDSCByPseudo(char *pseudo)
+{
+    int dSC = -1;
+    pthread_mutex_lock(&mutex_clients);
+    /* début section critique */
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (strcmp(clients[i].pseudo, pseudo) == 0)
+        {
+            dSC = clients[i].dSC;
+            break;
+        }
+    }
+    /* fin section critique */
+    pthread_mutex_unlock(&mutex_clients);
+    return dSC;
+}
+
+char *getPseudoByDSC(int dSC)
+{
+    char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
+    pseudo[0] = '\0';
+    pthread_mutex_lock(&mutex_clients);
+    /* début section critique */
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (clients[i].dSC == dSC)
+        {
+            strcpy(pseudo, clients[i].pseudo);
+            break;
+        }
+    }
+    /* fin section critique */
+    pthread_mutex_unlock(&mutex_clients);
+    return pseudo;
+}
+
 /*
     Commandes:
     /quit : quitter le serveur : retourne -1
@@ -132,24 +169,20 @@ int CommandsManager(char *msg, int index_client)
                 return 0;
             }
             strcpy(private_message, str_token);
-            // get the index of the user
-            int index_user = -1;
-            pthread_mutex_lock(&mutex_clients);
-            /* début section critique */
-            for (int i = 0; i < MAX_CLIENTS; i++)
+            // get the dSC of the user
+            int dSC_receiver = getDSCByPseudo(user_pseudo);
+            printf("dSC_receiver: %d\n", dSC_receiver);
+            if (dSC_receiver == -1)
             {
-                if (strcmp(clients[i].pseudo, user_pseudo) == 0)
+                if (send(clients[index_client].dSC, "❗ ERROR : user not found", strlen("❗ ERROR : user not found") + 1, 0) <= 0)
                 {
-                    index_user = i;
-                    break;
+                    printf("❗ ERROR : send \n");
+                    return -1;
                 }
             }
-            /* fin section critique */
-            pthread_mutex_unlock(&mutex_clients);
-            // send the private message to the user
-            if (index_user != -1)
+            else
             {
-                if (send(clients[index_user].dSC, private_message, strlen(private_message) + 1, 0) <= 0)
+                if (send(dSC_receiver, private_message, strlen(private_message) + 1, 0) <= 0)
                 {
                     printf("❗ ERROR : send \n");
                     return -1;
@@ -175,6 +208,8 @@ void *client(void *ind)
             printf("❗ ERROR : recv pseudo \n");
             disconnectClient(index_client);
         }
+        printf("|---- pseudo -> %s\n", pseudo);
+        printf("|---- taille pseudo -> %ld\n", strlen(pseudo));
         pthread_mutex_lock(&mutex_clients);
         /* début section critique */
         for (int i = 0; i < MAX_CLIENTS; i++)
