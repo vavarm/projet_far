@@ -232,6 +232,42 @@ int CommandsManager(char *msg, int index_client)
                     closedir(d);
                 }
                 return 0;
+        } else if (strncmp(msg, "/sendfile", sizeof(char)* 9) == 0){
+            FILE *fp;
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            char * filename = str_token;
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            int size = atoi(str_token);
+            int size_received = 0;
+            while(size_received < size){
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                if (recv(clients[index_client].dSC, str, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
+                {
+                    printf("❗ ERROR : recv \n");
+                    return -1;
+                }
+                size_received += strlen(str);
+                filename = strcat(PATH, filename);
+                fp = fopen(filename, "a");
+                fprintf(fp, "%s", str);
+                fclose(fp);                
+            }
         }
         return 0;
     }
