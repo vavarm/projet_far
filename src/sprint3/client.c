@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
+#include <dirent.h>
 
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
@@ -34,6 +35,64 @@ void *sendThread(void *dS)
     while (1)
     {
         fgets(msg, MAX_LENGTH, stdin);
+        if (msg[strlen(msg) - 1] == '\n')
+        {
+            msg[strlen(msg) - 1] = '\0';
+        }
+        if (strncmp(msg, "/listfiles", sizeof(char) * 10) == 0)
+        {
+            system("ls -1 ./files_Client");
+            continue;
+        }
+        ////
+        // first: check if the command is /sendfile <filename>
+        // second : check if the file exists
+        // third : get the size of the file
+        // fourth : send '/sendfile <name> <size>' to the server
+        // fith : send the file to the server with a loop
+        ////
+        if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
+        {
+            char *command = strtok(msg, " ");
+            if (command == NULL)
+            {
+                printf("❗ ERROR : sendfile <filename>\n");
+                continue;
+            }
+            printf("command: %s\n", command);
+            char *filename = strtok(NULL, "\0");
+            if (filename == NULL)
+            {
+                printf("❗ ERROR : sendfile <filename>\n");
+                continue;
+            }
+            printf("filename: %s\n", filename);
+            // check if the file exists
+            char path[100] = "./files_Client/";
+            strcat(path, filename);
+            printf("path: %s\n", path);
+            FILE *file = fopen(path, "r");
+            if (file == NULL)
+            {
+                printf("❗ ERROR : file not found\n");
+                continue;
+            }
+            printf("file found\n");
+            // get the size of the file
+            fseek(file, 0L, SEEK_END); // seek to the end of the file
+            int size = ftell(file);    // get the position, which is the size of the file
+            rewind(file);              // seek to the beginning of the file
+            printf("size: %d\n", size);
+            // send '/sendfile <name> <size>' to the server
+            strcat(msg, " ");
+            strcat(msg, size);
+            printf("msg: %s\n", msg);
+            if (send(ds, msg, strlen(msg) + 1, 0) == -1)
+            {
+                printf("❗ ERROR : send \n");
+                exit(0);
+            }
+        }
         if (msg[strlen(msg) - 1] == '\n')
         {
             msg[strlen(msg) - 1] = '\0';

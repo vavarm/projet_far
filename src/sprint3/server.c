@@ -31,7 +31,7 @@ pthread_mutex_t mutex_clients;
 // semaphore that manages the number of clients connected
 sem_t semaphore;
 
-// TODO: add a CleanThread thread that will clean a thread when it's disconnected by disconnectClient() by getting a semaphore and then calling pthread_join() to get the message of pthread_exit() and then release the semaphore
+// TODO: add a CleanThreads thread that will clean a thread when it's disconnected by disconnectClient() by getting a semaphore and then calling pthread_join() to get the message of pthread_exit() and then release the semaphore
 
 // TODO: add a dissconnect status and use it in pthread_exit()
 void disconnectClient(int index_client)
