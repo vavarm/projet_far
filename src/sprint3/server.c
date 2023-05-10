@@ -300,6 +300,7 @@ void signalHandler(int sig)
                 break;
             }
         }
+        // TODO: unbind the socket
         printf("👋🏻 Server closed\n");
         exit(0);
     }

@@ -53,6 +53,7 @@ void *sendThread(void *dS)
         ////
         if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
         {
+            // TODO: call a thread to send the file
             char *command = strtok(msg, " ");
             if (command == NULL)
             {
@@ -78,14 +79,15 @@ void *sendThread(void *dS)
                 continue;
             }
             printf("file found\n");
+            printf("filename: %s\n", filename);
             // get the size of the file
             fseek(file, 0L, SEEK_END); // seek to the end of the file
             int size = ftell(file);    // get the position, which is the size of the file
             rewind(file);              // seek to the beginning of the file
             printf("size: %d\n", size);
+            printf("filename: %s\n", filename);
             // send '/sendfile <name> <size>' to the server
-            strcat(msg, " ");
-            strcat(msg, size);
+            sprintf(msg, "/sendfile %s %d", filename, size);
             printf("msg: %s\n", msg);
             if (send(ds, msg, strlen(msg) + 1, 0) == -1)
             {

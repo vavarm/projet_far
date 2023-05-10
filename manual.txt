@@ -1,5 +1,6 @@
 /cmd : list all commands
 /listfiles : list all the files that can be send to the server
+/sendfile <filename> : send the file specified in parameter to the server
 /list : list all connected users by their pseudo
 /mp <user> <message> : send a private message to a user
 /quit : disconnect and quit the system
