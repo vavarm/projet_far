@@ -6,9 +6,11 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <signal.h>
+#include <dirent.h>
 
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
+#define CHUNK_SIZE 512
 
 char pseudo[PSEUDO_LENGTH];
 int dS;
@@ -27,6 +29,51 @@ void signalHandler(int sig)
         exit(0);
     }
 }
+void *sendFileAsync(void *arg)
+{
+    printf("sendFileAsync\n");
+    char *filename = (char *)arg;
+    printf("filename: %s\n", filename);
+    char path[100] = "./files_Client/";
+    sprintf(path, "%s%s", path, filename);
+    printf("path: %s\n", path);
+    FILE *file = fopen(path, "r");
+    if (file == NULL)
+    {
+        printf("❗ ERROR : file not found\n");
+        pthread_exit(NULL);
+    }
+    printf("file found\n");
+    //get the size of the file
+    fseek(file, 0L, SEEK_END); // seek to the end of the file
+    int size = ftell(file);    // get the position, which is the size of the file
+    rewind(file);              // seek to the beginning of the file
+    printf("size: %d\n", size);
+    //send the command to the server
+    char *command = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    sprintf(command, "/sendfile %s %d", filename, size);
+    printf("command: %s\n", command);
+    if(send(dS, command, strlen(command) + 1, 0) == -1){
+        printf("❗ ERROR : send \n");
+        exit(0);
+    }
+    printf("command sent\n");
+    //send the file to the server using a loop and fread to read the file by chunks
+    char *buffer = malloc(sizeof(char) * (CHUNK_SIZE + 1));
+    int nbBytesRead = 0;
+    while ((nbBytesRead = fread(buffer, sizeof(char), CHUNK_SIZE, file)) > 0)
+    {
+        printf("nbBytesRead: %d\n", nbBytesRead);
+        if (send(dS, buffer, nbBytesRead, 0) == -1)
+        {
+            printf("❗ ERROR : send \n");
+            exit(0);
+        }
+        printf("buffer sent\n");
+    }
+    fclose(file);
+    printf("file sent\n");
+}
 void *sendThread(void *dS)
 {
     int ds = (int)dS;
@@ -34,6 +81,38 @@ void *sendThread(void *dS)
     while (1)
     {
         fgets(msg, MAX_LENGTH, stdin);
+        if (msg[strlen(msg) - 1] == '\n')
+        {
+            msg[strlen(msg) - 1] = '\0';
+        }
+        if (strncmp(msg, "/listfiles", sizeof(char) * 10) == 0)
+        {
+            system("ls -1 ./files_Client");
+            continue;
+        }
+        if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
+        {
+            // TODO: call a thread to send the file
+            char *command = strtok(msg, " ");
+            if (command == NULL)
+            {
+                printf("❗ ERROR : sendfile <filename>\n");
+                continue;
+            }
+            printf("command: %s\n", command);
+            char *filename = strtok(NULL, "\0");
+            if (filename == NULL)
+            {
+                printf("❗ ERROR : sendfile <filename>\n");
+                continue;
+            }
+            printf("filename: %s\n", filename);
+            printf("sending file...\n");
+            pthread_t threadSendFile;
+            pthread_create(&threadSendFile, NULL, sendFileAsync, (void *)filename);
+            pthread_join(threadSendFile, NULL);
+            continue;
+        }
         if (msg[strlen(msg) - 1] == '\n')
         {
             msg[strlen(msg) - 1] = '\0';
