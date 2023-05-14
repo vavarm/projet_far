@@ -8,12 +8,16 @@
 #include <semaphore.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #define MAX_CLIENTS 2
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
+#define PATH "files_Server"
 
 volatile sig_atomic_t keepRunning = true;
+
 
 // structure of users
 typedef struct
@@ -210,6 +214,62 @@ int CommandsManager(char *msg, int index_client)
                 }
             }
             return 0;
+        }else if (strncmp(msg, "/dir", sizeof(char) * 4) == 0){
+                struct dirent *dir;
+                DIR *d = opendir("./files_Server"); 
+                if (d)
+                {
+                    while ((dir = readdir(d)) != NULL)
+                    {
+                        char* str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                        strcpy(str, dir->d_name);
+                        strcat(str, "\n");
+                        if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                        {
+                            printf("❗ ERROR : send /dir\n");
+                            return -1;
+                        }
+                        sleep(0.1);
+                    }
+                    closedir(d);
+                }
+                return 0;
+        } else if (strncmp(msg, "/sendfile", sizeof(char)* 9) == 0){
+            FILE *fp;
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            char * filename = str_token;
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            int size = atoi(str_token);
+            int size_received = 0;
+            while(size_received < size){
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                if (recv(clients[index_client].dSC, str, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
+                {
+                    printf("❗ ERROR : recv \n");
+                    return -1;
+                }
+                size_received += strlen(str);
+                filename = strcat(PATH, filename);
+                fp = fopen(filename, "a");
+                fprintf(fp, "%s", str);
+                fclose(fp);                
+            }
         }
         return 0;
     }
@@ -315,6 +375,13 @@ int main(int argc, char *argv[])
     }
 
     printf("Début programme\n");
+
+    if (mkdir(PATH, 0755) == -1)
+    {
+        printf("❗ ERROR : mkdir -- dossier serveur non créé\n");
+        printf(" --- peut être déjà créé\n");
+    }
+
     int dS = socket(PF_INET, SOCK_STREAM, 0);
     printf("Socket Créé\n");
 
