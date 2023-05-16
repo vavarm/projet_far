@@ -323,7 +323,7 @@ void *client(void *ind)
     printf("👤 %s connected, with dSC = %d\n", clients[index_client].pseudo, clients[index_client].dSC);
     printf("|---- pseudo -> %s\n", (clients[index_client]).pseudo);
 
-    while (1)
+    while (keepRunning)
     {
         printf("index_client: %d, dSC: %d\n", index_client, clients[index_client].dSC);
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
