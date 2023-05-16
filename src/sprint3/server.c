@@ -14,7 +14,8 @@
 #define MAX_CLIENTS 2
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
-#define PATH "files_Server"
+#define PATH "./files_Server"
+#define CHUNK_SIZE 512
 
 volatile sig_atomic_t keepRunning = true;
 
@@ -237,6 +238,7 @@ int CommandsManager(char *msg, int index_client)
         } else if (strncmp(msg, "/sendfile", sizeof(char)* 9) == 0){
             FILE *fp;
             char *str_token = strtok(msg, " ");
+            char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
             if (str_token == NULL)
             {
                 printf("❗ ERROR : malloc \n");
@@ -249,6 +251,7 @@ int CommandsManager(char *msg, int index_client)
                 return 0;
             }
             char * filename = str_token;
+            sprintf(path, "%s/%s", PATH, filename);
             str_token = strtok(NULL, " ");
             if (str_token == NULL)
             {
@@ -257,19 +260,23 @@ int CommandsManager(char *msg, int index_client)
             }
             int size = atoi(str_token);
             int size_received = 0;
+            char *block = malloc(CHUNK_SIZE);
+            fp = fopen(path, "a");
+            int received = 0;
             while(size_received < size){
-                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
-                if (recv(clients[index_client].dSC, str, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
+                if (  (received = recv(clients[index_client].dSC, block, CHUNK_SIZE, 0) )<= 0)
                 {
                     printf("❗ ERROR : recv \n");
                     return -1;
                 }
-                size_received += strlen(str);
-                filename = strcat(PATH, filename);
-                fp = fopen(filename, "a");
-                fprintf(fp, "%s", str);
-                fclose(fp);                
+                size_received += received;
+                
+                fwrite(block, 1, received, fp);
+                printf("received: %d\n", received); 
+                printf("size_received: %d\n", size_received);             
             }
+            fclose(fp);
+            printf("file received\n");
         }
         return 0;
     }

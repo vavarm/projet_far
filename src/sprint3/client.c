@@ -63,13 +63,12 @@ void *sendFileAsync(void *arg)
     int nbBytesRead = 0;
     while ((nbBytesRead = fread(buffer, sizeof(char), CHUNK_SIZE, file)) > 0)
     {
-        printf("nbBytesRead: %d\n", nbBytesRead);
         if (send(dS, buffer, nbBytesRead, 0) == -1)
         {
             printf("❗ ERROR : send \n");
             exit(0);
         }
-        printf("buffer sent\n");
+        sleep(0.1);
     }
     fclose(file);
     printf("file sent\n");
@@ -103,7 +102,7 @@ void *sendThread(void *dS)
             // TODO: call a thread to send the file
             char *command = strtok(msg, " ");
             if (command == NULL)
-            {
+            { 
                 printf("❗ ERROR : sendfile <filename>\n");
                 continue;
             }
