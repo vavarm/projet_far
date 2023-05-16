@@ -92,13 +92,6 @@ void *sendThread(void *dS)
             printf("Taille max message: %d caractères\n", MAX_LENGTH);
             continue;
         }
-        
-        if (strlen(msg) >= MAX_LENGTH+1){
-            printf("❗ ERROR : message trop long \n");
-            printf("Taille max message: %d caractères\n", MAX_LENGTH);
-            continue;
-        }
-
 
         if (strncmp(msg, "/listfiles", sizeof(char) * 10) == 0)
         {
