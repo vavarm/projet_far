@@ -17,8 +17,17 @@
 #define PATH "./files_Server"
 #define CHUNK_SIZE 512
 
+
+
 volatile sig_atomic_t keepRunning = true;
 
+// structure of files
+typedef struct
+{
+    char filename[MAX_LENGTH];
+    int size;
+    int index_sender;
+} file_info;
 
 // structure of users
 typedef struct
@@ -105,6 +114,32 @@ void broadcastMessage(int index_sender, char *msg)
     }
     /* fin section critique */
     pthread_mutex_unlock(&mutex_clients);
+}
+
+void *receiveFileAsync(void* file_args){
+    file_info *file = (file_info *) file_args;
+    FILE *fp;
+    char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    int size_received = 0;
+    char *block = malloc(CHUNK_SIZE);
+    sprintf(path, "%s/%s", PATH, file->filename);
+    fp = fopen(path, "a");
+    int received = 0;
+    while(size_received < file->size){
+        if (  (received = recv(clients[file->index_sender].dSC, block, CHUNK_SIZE, 0) )<= 0)
+        {
+            printf("❗ ERROR : recv \n");
+            disconnectClient(file->index_sender);
+            pthread_exit(NULL);
+        }
+        size_received += received;
+                
+        fwrite(block, 1, received, fp);
+        printf("received: %d\n", received); 
+        printf("size_received: %d\n", size_received);             
+    }
+    fclose(fp);
+    printf("file received\n");
 }
 
 /*
@@ -236,9 +271,9 @@ int CommandsManager(char *msg, int index_client)
                 }
                 return 0;
         } else if (strncmp(msg, "/sendfile", sizeof(char)* 9) == 0){
-            FILE *fp;
+            
             char *str_token = strtok(msg, " ");
-            char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    
             if (str_token == NULL)
             {
                 printf("❗ ERROR : malloc \n");
@@ -251,7 +286,6 @@ int CommandsManager(char *msg, int index_client)
                 return 0;
             }
             char * filename = str_token;
-            sprintf(path, "%s/%s", PATH, filename);
             str_token = strtok(NULL, " ");
             if (str_token == NULL)
             {
@@ -259,24 +293,18 @@ int CommandsManager(char *msg, int index_client)
                 return 0;
             }
             int size = atoi(str_token);
-            int size_received = 0;
-            char *block = malloc(CHUNK_SIZE);
-            fp = fopen(path, "a");
-            int received = 0;
-            while(size_received < size){
-                if (  (received = recv(clients[index_client].dSC, block, CHUNK_SIZE, 0) )<= 0)
-                {
-                    printf("❗ ERROR : recv \n");
-                    return -1;
-                }
-                size_received += received;
-                
-                fwrite(block, 1, received, fp);
-                printf("received: %d\n", received); 
-                printf("size_received: %d\n", size_received);             
-            }
-            fclose(fp);
-            printf("file received\n");
+
+            //THREAD
+            //create
+            pthread_t thread;
+            //set args
+            file_info *args = malloc(sizeof(file_info)) ;
+            strcpy(args->filename,filename);
+            args->size = size;
+            args->index_sender = index_client;
+
+            //create thread
+            pthread_create(&thread, NULL, receiveFileAsync, (void *)args);
         }
         return 0;
     }

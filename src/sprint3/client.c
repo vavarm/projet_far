@@ -117,7 +117,6 @@ void *sendThread(void *dS)
             printf("sending file...\n");
             pthread_t threadSendFile;
             pthread_create(&threadSendFile, NULL, sendFileAsync, (void *)filename);
-            pthread_join(threadSendFile, NULL);
             continue;
         }
         if (msg[strlen(msg) - 1] == '\n')
