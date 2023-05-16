@@ -77,14 +77,29 @@ void *sendFileAsync(void *arg)
 void *sendThread(void *dS)
 {
     int ds = (int)dS;
-    char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    
     while (1)
     {
+        char *msg = malloc(sizeof(char) * (MAX_LENGTH + 1));
         fgets(msg, MAX_LENGTH, stdin);
         if (msg[strlen(msg) - 1] == '\n')
         {
             msg[strlen(msg) - 1] = '\0';
         }
+
+        if (strlen(msg) >= MAX_LENGTH+1){
+            printf("❗ ERROR : message trop long \n");
+            printf("Taille max message: %d caractères\n", MAX_LENGTH);
+            continue;
+        }
+        
+        if (strlen(msg) >= MAX_LENGTH+1){
+            printf("❗ ERROR : message trop long \n");
+            printf("Taille max message: %d caractères\n", MAX_LENGTH);
+            continue;
+        }
+
+
         if (strncmp(msg, "/listfiles", sizeof(char) * 10) == 0)
         {
             system("ls -1 ./files_Client");
