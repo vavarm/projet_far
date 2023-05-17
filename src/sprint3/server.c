@@ -118,6 +118,9 @@ void broadcastMessage(int index_sender, char *msg)
 
 void *receiveFileAsync(void* file_args){
     file_info *file = (file_info *) file_args;
+
+    printf("file size: %d\n", file->size);
+
     FILE *fp;
     char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
     int size_received = 0;
@@ -305,6 +308,7 @@ int CommandsManager(char *msg, int index_client)
 
             //create thread
             pthread_create(&thread, NULL, receiveFileAsync, (void *)args);
+            pthread_join(thread, NULL);
         }
         return 0;
     }
@@ -360,7 +364,7 @@ void *client(void *ind)
 
     while (keepRunning)
     {
-        printf("index_client: %d, dSC: %d\n", index_client, clients[index_client].dSC);
+        //printf("index_client: %d, dSC: %d\n", index_client, clients[index_client].dSC);
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");

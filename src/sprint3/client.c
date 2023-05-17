@@ -59,9 +59,9 @@ void *sendFileAsync(void *arg)
     }
     printf("command sent\n");
     //send the file to the server using a loop and fread to read the file by chunks
-    char *buffer = malloc(sizeof(char) * (CHUNK_SIZE + 1));
+    char *buffer = malloc(CHUNK_SIZE);
     int nbBytesRead = 0;
-    while ((nbBytesRead = fread(buffer, sizeof(char), CHUNK_SIZE, file)) > 0)
+    while ((nbBytesRead = fread(buffer, 1, CHUNK_SIZE, file)) > 0)
     {
         if (send(dS, buffer, nbBytesRead, 0) == -1)
         {
