@@ -14,8 +14,7 @@
 
 char pseudo[PSEUDO_LENGTH];
 int dS;
-int files_port;
-char *server_address;
+int dSF;
 
 void signalHandler(int sig)
 {
@@ -60,24 +59,6 @@ void *sendFileAsync(void *arg)
         exit(0);
     }
     printf("command sent\n");
-
-    int dSF = socket(PF_INET, SOCK_STREAM, 0);
-    printf("Socket dédié aux fichiers créé\n");
-
-    struct sockaddr_in aSF;
-    aSF.sin_family = AF_INET;
-    inet_pton(AF_INET, server_address, &(aSF.sin_addr));
-    aSF.sin_port = htons(files_port);
-    socklen_t lgASF = sizeof(struct sockaddr_in);
-    if (connect(dSF, (struct sockaddr *)&aSF, lgASF) == -1)
-    {
-        printf("❗ ERROR : erreur de connexion \n");
-        exit(0);
-    }
-    else
-    {
-        printf("Socket dédié aux fichiers Connecté\n");
-    }
 
     //send the file to the server using a loop and fread to read the file by chunks
     char *buffer = malloc(CHUNK_SIZE);
@@ -188,10 +169,6 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    server_address = malloc(sizeof(char) * (strlen(argv[1]) + 1));
-    server_address = argv[1];
-    files_port = atoi(argv[3]);
-
     printf("Début programme\n");
     dS = socket(PF_INET, SOCK_STREAM, 0);
     printf("Socket Créé\n");
@@ -209,6 +186,24 @@ int main(int argc, char *argv[])
     else
     {
         printf("Socket Connecté\n");
+    }
+
+    dSF = socket(PF_INET, SOCK_STREAM, 0);
+    printf("Socket dédié aux fichiers créé\n");
+
+    struct sockaddr_in aSF;
+    aSF.sin_family = AF_INET;
+    inet_pton(AF_INET, argv[1], &(aSF.sin_addr));
+    aSF.sin_port = htons(atoi(argv[3]));
+    socklen_t lgASF = sizeof(struct sockaddr_in);
+    if (connect(dSF, (struct sockaddr *)&aSF, lgASF) == -1)
+    {
+        printf("❗ ERROR : erreur de connexion \n");
+        exit(0);
+    }
+    else
+    {
+        printf("Socket dédié aux fichiers Connecté\n");
     }
 
     signal(SIGINT, signalHandler);
