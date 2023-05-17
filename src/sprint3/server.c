@@ -18,7 +18,7 @@
 #define CHUNK_SIZE 512
 
 
-
+int dsFiles;
 volatile sig_atomic_t keepRunning = true;
 
 // structure of files
@@ -121,6 +121,15 @@ void *receiveFileAsync(void* file_args){
 
     printf("file size: %d\n", file->size);
 
+    struct sockaddr_in adFiles;
+    socklen_t lgFiles = sizeof(struct sockaddr_in);
+    int dSF = accept(dsFiles, (struct sockaddr *)&adFiles, &lgFiles);
+    if (dSF == -1)
+    {
+        printf("❗ ERROR : accept\n");
+        pthread_exit(NULL);
+    }
+
     FILE *fp;
     char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
     int size_received = 0;
@@ -129,7 +138,7 @@ void *receiveFileAsync(void* file_args){
     fp = fopen(path, "a");
     int received = 0;
     while(size_received < file->size){
-        if (  (received = recv(clients[file->index_sender].dSC, block, CHUNK_SIZE, 0) )<= 0)
+        if (  (received = recv(dSF, block, CHUNK_SIZE, 0) )<= 0)
         {
             printf("❗ ERROR : recv \n");
             disconnectClient(file->index_sender);
@@ -308,7 +317,6 @@ int CommandsManager(char *msg, int index_client)
 
             //create thread
             pthread_create(&thread, NULL, receiveFileAsync, (void *)args);
-            pthread_join(thread, NULL);
         }
         return 0;
     }
@@ -407,9 +415,9 @@ void signalHandler(int sig)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
+    if (argc != 3)
     {
-        printf("❗ ERROR Argument: nombre d'argument invalide (port)\n");
+        printf("❗ ERROR Argument: nombre d'argument invalide (port) (port fichier)\n");
         return -1;
     }
 
@@ -418,9 +426,10 @@ int main(int argc, char *argv[])
     if (mkdir(PATH, 0755) == -1)
     {
         printf("❗ ERROR : mkdir -- dossier serveur non créé\n");
-        printf(" --- peut être déjà créé\n");
+        printf(" --- peut-être déjà créé\n");
     }
 
+    // Socket messages
     int dS = socket(PF_INET, SOCK_STREAM, 0);
     printf("Socket Créé\n");
 
@@ -437,6 +446,28 @@ int main(int argc, char *argv[])
 
     int l = listen(dS, 7);
     if (l == -1)
+    {
+        printf("❗ ERROR : listen\n");
+        exit(0);
+    }
+
+    // Socket files
+    dsFiles = socket(PF_INET, SOCK_STREAM, 0);
+    printf("Socket dédié aux fichiers Créé\n");
+
+    struct sockaddr_in adFiles;
+    adFiles.sin_family = AF_INET;
+    adFiles.sin_addr.s_addr = INADDR_ANY;
+    adFiles.sin_port = htons(atoi(argv[2]));
+    if (bind(dsFiles, (struct sockaddr *)&adFiles, sizeof(adFiles)) == -1)
+    {
+        printf("❗ ERROR : bind (le port est peut être déjà utilisé)\n");
+        exit(0);
+    }
+    printf("Socket dédié aux fichiers Nommé\n");
+
+    int lFiles = listen(dsFiles, 7);
+    if (lFiles == -1)
     {
         printf("❗ ERROR : listen\n");
         exit(0);
