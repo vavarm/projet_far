@@ -11,6 +11,15 @@
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 #define CHUNK_SIZE 512
+#define FILES_PATH "./files_Client/"
+
+// structure of files
+typedef struct
+{
+    char filename[MAX_LENGTH];
+    int size;
+    int index_sender;
+} file_info;
 
 char pseudo[PSEUDO_LENGTH];
 int dS;
@@ -35,8 +44,8 @@ void *sendFileAsync(void *arg)
     printf("sendFileAsync\n");
     char *filename = (char *)arg;
     printf("filename: %s\n", filename);
-    char path[100] = "./files_Client/";
-    sprintf(path, "%s%s", path, filename);
+    char path[200];
+    sprintf(path, "%s%s", FILES_PATH, filename);
     printf("path: %s\n", path);
     FILE *file = fopen(path, "r");
     if (file == NULL)
@@ -75,6 +84,31 @@ void *sendFileAsync(void *arg)
     fclose(file);
     printf("file sent\n");
 }
+
+void *receiveFileAsync(void *args){
+    file_info *file = (file_info *)args;
+    printf("receiveFileAsync\n");
+    printf("filename: %s\n", file->filename);
+    printf("size: %d\n", file->size);
+    int nbBytesReceived = 0;
+    char *buffer = malloc(CHUNK_SIZE);
+    char path[200];
+    sprintf(path, "%s%s", FILES_PATH, file->filename);
+    printf("path: %s\n", path);
+    FILE *fileReceived = fopen(path, "a");
+    while(nbBytesReceived < file->size){
+        int nbBytesReceivedNow = recv(dSF, buffer, CHUNK_SIZE, 0);
+        if(nbBytesReceivedNow == -1){
+            printf("❗ ERROR : recv \n");
+            exit(0);
+        }
+        fwrite(buffer, 1, nbBytesReceivedNow, fileReceived);
+        nbBytesReceived += nbBytesReceivedNow;
+    }
+    fclose(fileReceived);
+    printf("file received\n");
+}
+
 void *sendThread(void *dS)
 {
     int ds = (int)dS;
@@ -101,7 +135,6 @@ void *sendThread(void *dS)
         }
         if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
         {
-            // TODO: call a thread to send the file
             char *command = strtok(msg, " ");
             if (command == NULL)
             { 
@@ -121,9 +154,47 @@ void *sendThread(void *dS)
             pthread_create(&threadSendFile, NULL, sendFileAsync, (void *)filename);
             continue;
         }
-        if (msg[strlen(msg) - 1] == '\n')
+        if (strncmp(msg, "/receivefile", sizeof(char) * 12) == 0)
         {
-            msg[strlen(msg) - 1] = '\0';
+            char *command = strtok(msg, " ");
+            if (command == NULL)
+            {
+                printf("❗ ERROR : receivefile <filename>\n");
+                continue;
+            }
+            printf("command: %s\n", command);
+            char *filename = strtok(NULL, "\0");
+            if (filename == NULL)
+            {
+                printf("❗ ERROR : receivefile <filename>\n");
+                continue;
+            }
+            printf("filename: %s\n", filename);
+            if (send(dS, msg, strlen(msg) + 1, 0) == -1)
+            {
+                printf("❗ ERROR : send \n");
+                exit(0);
+            }
+            printf("file requested\n");
+            int size;
+            if(recv(dSF, size, sizeof(int), 0) == -1){
+                printf("❗ ERROR : recv \n");
+                exit(0);
+            }
+            // if size == -1, the file doesn't exist
+            if (size == -1)
+            {
+                printf("❗ ERROR : file not found\n");
+                continue;
+            }
+            printf("size: %d\n", size);
+
+            file_info *file = malloc(sizeof(file_info));
+            strcpy(file->filename, filename);
+            file->size = size;
+            file->index_sender = NULL;
+            pthread_t threadReceiveFile;
+            pthread_create(&threadReceiveFile, NULL, receiveFileAsync, (void *)file);
         }
         if (send(ds, msg, strlen(msg) + 1, 0) == -1)
         {
