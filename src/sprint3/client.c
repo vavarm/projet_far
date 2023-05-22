@@ -11,7 +11,7 @@
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
 #define CHUNK_SIZE 512
-#define SERVER_FILES_PATH "./files_Server/"
+#define FILES_PATH "./files_Client/"
 
 // structure of files
 typedef struct
@@ -44,8 +44,8 @@ void *sendFileAsync(void *arg)
     printf("sendFileAsync\n");
     char *filename = (char *)arg;
     printf("filename: %s\n", filename);
-    char path[100] = "./files_Client/";
-    sprintf(path, "%s%s", path, filename);
+    char path[200];
+    sprintf(path, "%s%s", FILES_PATH, filename);
     printf("path: %s\n", path);
     FILE *file = fopen(path, "r");
     if (file == NULL)
@@ -92,8 +92,8 @@ void *receiveFileAsync(void *args){
     printf("size: %d\n", file->size);
     int nbBytesReceived = 0;
     char *buffer = malloc(CHUNK_SIZE);
-    char path[100] = "./files_Client/";
-    sprintf(path, "%s%s", path, file->filename);
+    char path[200];
+    sprintf(path, "%s%s", FILES_PATH, file->filename);
     printf("path: %s\n", path);
     FILE *fileReceived = fopen(path, "a");
     while(nbBytesReceived < file->size){
