@@ -33,6 +33,7 @@ typedef struct
 typedef struct
 {
     int dSC;
+    int dSF;
     char pseudo[PSEUDO_LENGTH];
 } clientConnecte;
 
@@ -53,6 +54,7 @@ void disconnectClient(int index_client)
     printf("👤 %s disconnected, with dSC = %d\n", clients[index_client].pseudo, clients[index_client].dSC);
     // put the default values in the array
     clients[index_client].dSC = -1;
+    clients[index_client].dSF = -1;
     clients[index_client].pseudo[0] = '\0';
     // release the semaphore to accept new clients
     sem_post(&semaphore);
@@ -123,12 +125,6 @@ void *receiveFileAsync(void* file_args){
 
     struct sockaddr_in adFiles;
     socklen_t lgFiles = sizeof(struct sockaddr_in);
-    int dSF = accept(dsFiles, (struct sockaddr *)&adFiles, &lgFiles);
-    if (dSF == -1)
-    {
-        printf("❗ ERROR : accept\n");
-        pthread_exit(NULL);
-    }
 
     FILE *fp;
     char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
@@ -138,7 +134,7 @@ void *receiveFileAsync(void* file_args){
     fp = fopen(path, "a");
     int received = 0;
     while(size_received < file->size){
-        if (  (received = recv(dSF, block, CHUNK_SIZE, 0) )<= 0)
+        if (  (received = recv(clients[file->index_sender].dSF, block, CHUNK_SIZE, 0) )<= 0)
         {
             printf("❗ ERROR : recv \n");
             disconnectClient(file->index_sender);
@@ -499,6 +495,10 @@ int main(int argc, char *argv[])
         struct sockaddr_in aC;
         socklen_t lg = sizeof(struct sockaddr_in);
         int dSC = accept(dS, (struct sockaddr *)&aC, &lg);
+        if(dSC == -1){
+            printf("❗ ERROR : accept\n");
+            exit(0);
+        }
         // wait for a client to disconnect if the number of clients connected is equal to MAX_CLIENTS
         sem_wait(&semaphore);
         int ind = 0;
@@ -511,6 +511,14 @@ int main(int argc, char *argv[])
             {
                 clients[ind].dSC = dSC;
                 printf("dSC = %d\n", clients[ind].dSC);
+                // listen to the file socket
+                int dSF = accept(dsFiles, (struct sockaddr *)&aC, &lg);
+                if(dSF == -1){
+                    printf("❗ ERROR : accept\n");
+                    exit(0);
+                }
+                clients[ind].dSF = dSF;
+                printf("dSF = %d\n", clients[ind].dSF);
                 trouve = 0;
             }
             else
