@@ -150,6 +150,64 @@ void *receiveFileAsync(void* file_args){
     printf("file received\n");
 }
 
+void *sendFileAsync(void *file_args)
+{
+    file_info *file = (file_info *)file_args;
+    file->size = 0;
+
+    printf("file size: %d\n", file->size);
+
+    struct sockaddr_in adFiles;
+    socklen_t lgFiles = sizeof(struct sockaddr_in);
+    int dSF = accept(dsFiles, (struct sockaddr *)&adFiles, &lgFiles);
+    if (dSF == -1)
+    {
+        printf("❗ ERROR : accept\n");
+        pthread_exit(NULL);
+    }
+
+    FILE *fp;
+    char *path = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    int size_sent = 0;
+    char *block = malloc(CHUNK_SIZE);
+    sprintf(path, "%s/%s", PATH, file->filename);
+    fp = fopen(path, "r");
+    // verify if the file exists
+    if (fp == NULL)
+    {
+        printf("❗ ERROR : fopen\n");
+        send(dSF, -1, sizeof(int), 0);
+        pthread_exit(NULL);
+    }
+    // get the size of the file
+    fseek(fp, 0L, SEEK_END);
+    file->size = ftell(fp);
+    fseek(fp, 0L, SEEK_SET);
+    // send the size of the file
+
+    int sent = 0;
+    while (size_sent < file->size)
+    {
+        if ((sent = fread(block, 1, CHUNK_SIZE, fp)) <= 0)
+        {
+            printf("❗ ERROR : fread \n");
+            disconnectClient(file->index_sender);
+            pthread_exit(NULL);
+        }
+        size_sent += sent;
+        if (send(dSF, block, sent, 0) <= 0)
+        {
+            printf("❗ ERROR : send \n");
+            disconnectClient(file->index_sender);
+            pthread_exit(NULL);
+        }
+        printf("sent: %d\n", sent);
+        printf("size_sent: %d\n", size_sent);
+    }
+    fclose(fp);
+    printf("file sent\n");
+}
+
 /*
     Commandes:
     /quit : quitter le serveur : retourne -1
@@ -313,6 +371,32 @@ int CommandsManager(char *msg, int index_client)
 
             //create thread
             pthread_create(&thread, NULL, receiveFileAsync, (void *)args);
+        }else if (strncmp(msg, "/receivefile", sizeof(char)* 12) == 0){
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            char * filename = str_token;
+            
+            //THREAD
+            //create
+            pthread_t thread;
+            //set args
+            file_info *args = malloc(sizeof(file_info)) ;
+            strcpy(args->filename,filename);
+            args->index_sender = index_client;
+
+            //create thread
+            pthread_create(&thread, NULL, sendFileAsync, (void *)args);
+
         }
         return 0;
     }
