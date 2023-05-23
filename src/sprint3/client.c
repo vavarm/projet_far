@@ -170,24 +170,26 @@ void *sendThread(void *dS)
                 continue;
             }
             printf("filename: %s\n", filename);
-            if (send(dS, msg, strlen(msg) + 1, 0) == -1)
+            char *commandSent = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            sprintf(commandSent, "/receivefile %s", filename);
+            if (send(dS, commandSent, strlen(commandSent) + 1, 0) == -1)
             {
                 printf("❗ ERROR : send \n");
                 exit(0);
             }
             printf("file requested\n");
             int size;
-            if(recv(dSF, size, sizeof(int), 0) == -1){
+            if(recv(dSF, &size, sizeof(int), 0) == -1){
                 printf("❗ ERROR : recv \n");
                 exit(0);
             }
+            printf("size: %d\n", size);
             // if size == -1, the file doesn't exist
             if (size == -1)
             {
                 printf("❗ ERROR : file not found\n");
                 continue;
             }
-            printf("size: %d\n", size);
 
             file_info *file = malloc(sizeof(file_info));
             strcpy(file->filename, filename);

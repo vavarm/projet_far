@@ -153,18 +153,9 @@ void *receiveFileAsync(void* file_args){
 void *sendFileAsync(void *file_args)
 {
     file_info *file = (file_info *)file_args;
-    file->size = 0;
-
-    printf("file size: %d\n", file->size);
 
     struct sockaddr_in adFiles;
     socklen_t lgFiles = sizeof(struct sockaddr_in);
-    int dSF = accept(dsFiles, (struct sockaddr *)&adFiles, &lgFiles);
-    if (dSF == -1)
-    {
-        printf("❗ ERROR : accept\n");
-        pthread_exit(NULL);
-    }
 
     FILE *fp;
     char *path = malloc(sizeof(char) * (MAX_LENGTH + 1));
@@ -176,14 +167,22 @@ void *sendFileAsync(void *file_args)
     if (fp == NULL)
     {
         printf("❗ ERROR : fopen\n");
-        send(dSF, -1, sizeof(int), 0);
+        send(clients[file->index_sender].dSF, -1, sizeof(int), 0);
         pthread_exit(NULL);
     }
+    printf("file found\n");
     // get the size of the file
     fseek(fp, 0L, SEEK_END);
     file->size = ftell(fp);
     fseek(fp, 0L, SEEK_SET);
+    printf("file size: %d\n", file->size);
     // send the size of the file
+    if (send(clients[file->index_sender].dSF, &(file->size), sizeof(int), 0) <= 0)
+    {
+        printf("❗ ERROR : send \n");
+        disconnectClient(file->index_sender);
+        pthread_exit(NULL);
+    }
 
     int sent = 0;
     while (size_sent < file->size)
@@ -195,7 +194,7 @@ void *sendFileAsync(void *file_args)
             pthread_exit(NULL);
         }
         size_sent += sent;
-        if (send(dSF, block, sent, 0) <= 0)
+        if (send(clients[file->index_sender].dSF, block, sent, 0) <= 0)
         {
             printf("❗ ERROR : send \n");
             disconnectClient(file->index_sender);
@@ -372,13 +371,14 @@ int CommandsManager(char *msg, int index_client)
             //create thread
             pthread_create(&thread, NULL, receiveFileAsync, (void *)args);
         }else if (strncmp(msg, "/receivefile", sizeof(char)* 12) == 0){
+            printf("receivefile command: %s\n", msg);
             char *str_token = strtok(msg, " ");
             if (str_token == NULL)
             {
                 printf("❗ ERROR : malloc \n");
                 return 0;
             }
-            str_token = strtok(NULL, " ");
+            str_token = strtok(NULL, "\0");
             if (str_token == NULL)
             {
                 printf("❗ ERROR : malloc \n");
