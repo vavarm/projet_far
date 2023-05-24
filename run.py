@@ -31,9 +31,9 @@ def launchServer(port1, port2):
     print(command)
 
     # run the bash command
-
+    process = subprocess.Popen("gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True)
     # Ubuntu
-"""
+    """
     if "ubuntu" in platform.version().lower():
         process = subprocess.Popen(
             "gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True
@@ -41,8 +41,8 @@ def launchServer(port1, port2):
 
     else:
         print("OS not supported")
-"""
-    process = subprocess.Popen("gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True)
+    """
+    
 
 # function to launch the client
 
@@ -55,7 +55,9 @@ def launchClient(ip, port1, port2):
     print(command)
 
     # run the bash command
-
+    process = subprocess.Popen(
+            "gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True
+        )
     # Ubuntu
     """
     if "ubuntu" in platform.version().lower():
@@ -66,9 +68,7 @@ def launchClient(ip, port1, port2):
     else:
         print("OS not supported")
     """
-    process = subprocess.Popen(
-            "gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True
-        )
+    
 
 # function to open a new window with two text fields and a button
 
