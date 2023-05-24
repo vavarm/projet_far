@@ -242,6 +242,10 @@ int CommandsManager(char *msg, int index_client)
         {
             return -1;
         }
+        else if (strncmp(msg, "/rm", sizeof(char) * 3) == 0){
+            system("rm -r ./files_Server");
+            system("mkdir ./files_Server");
+        }
         else if (strncmp(msg, "/listallusers", sizeof(char) * 13) == 0)
         {
             // return all the users to the client

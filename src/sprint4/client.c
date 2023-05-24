@@ -122,6 +122,13 @@ void *sendThread(void *dS)
             system("ls -1 ./files_Client");
             continue;
         }
+        if (strncmp(msg, "/rm", sizeof(char) * 3) == 0)
+        {
+            if (send(dS, "/rm", sizeof(char) * 3, 0)==0){
+                printf("❗ ERROR : send \n");
+            }
+            continue;
+        }
         if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
         {
             char *command = strtok(msg, " ");
