@@ -49,7 +49,7 @@ def launchServer(port1, port2):
 def launchClient(ip, port1, port2):
     # create a bash command to run the client
 
-    command = ".out/client.o " + ip + " " + + port1 + " " + port2
+    command = ".out/client.o " + ip + " " + port1 + " " + port2
 
     print(command)
 
