@@ -133,6 +133,12 @@ void *sendThread(void *dS)
             system("ls -1 ./files_Client");
             continue;
         }
+        if (strncmp(msg, "/rm", sizeof(char) * 3) == 0)
+        {
+            system("rm -r ./files_Server");
+            system("mkdir ./files_Server");
+            continue;
+        }
         if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)
         {
             char *command = strtok(msg, " ");
