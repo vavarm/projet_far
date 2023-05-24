@@ -80,9 +80,13 @@ def openServerWindow():
 
     # create one label for the port
 
-    portLabel = tk.Label(window, text="Port:")
+    portLabel = tk.Label(window, text="Port1:")
 
     portLabel.place(x=10, y=10)
+
+    portLabel2 = tk.Label(window, text="Port2:")
+
+    portLabel2.place(x=10, y=40)
 
     # create one text field for the port
 
@@ -91,6 +95,12 @@ def openServerWindow():
     port.place(x=100, y=10)
 
     port.insert(0, "3000")
+
+    port2 = tk.Entry(window)
+
+    port2.place(x=100, y=40)
+
+    port2.insert(0, "3000")
 
     # create a button
 
@@ -111,7 +121,7 @@ def openClientWindow():
 
     window.title("Connect client")
 
-    window.geometry("300x100")
+    window.geometry("300x200")
 
     window.configure(bg="white")
 
@@ -127,7 +137,7 @@ def openClientWindow():
 
     portLabel2 = tk.Label(window, text="Port2:")
 
-    portLabel2.place(x=10, y=40)
+    portLabel2.place(x=10, y=70)
 
     # create two text fields
 
@@ -155,7 +165,7 @@ def openClientWindow():
         window, text="Connect", command=lambda: launchClient(ip.get(), port1.get(), port2.get())
     )
 
-    connect.place(x=200, y=70)
+    connect.place(x=200, y=100)
 
     window.mainloop()
 
