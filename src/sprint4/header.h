@@ -5,7 +5,6 @@
 #define PATH_CLIENT_FILES "./files_Client/"
 #define CHUNK_SIZE 512
 
-
 // structure of files
 typedef struct{
     char filename[MAX_LENGTH];
@@ -18,4 +17,5 @@ typedef struct{
     int dSC;
     int dSF;
     char pseudo[PSEUDO_LENGTH];
+    int channel;
 } clientConnecte;

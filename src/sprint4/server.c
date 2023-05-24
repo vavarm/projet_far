@@ -78,6 +78,25 @@ char *getPseudoByDSC(int dSC)
     return pseudo;
 }
 
+void sendMessageInChannel(int index_sender, char *msg, int channel)
+{
+    pthread_mutex_lock(&mutex_clients);
+    /* début section critique */
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (index_sender != i && clients[i].dSC != -1 && clients[i].channel == channel)
+        {
+            if (send(clients[i].dSC, msg, strlen(msg) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                disconnectClient(index_sender);
+            }
+        }
+    }
+    /* fin section critique */
+    pthread_mutex_unlock(&mutex_clients);
+}
+
 void broadcastMessage(int index_sender, char *msg)
 {
     pthread_mutex_lock(&mutex_clients);
@@ -191,7 +210,8 @@ void *sendFileAsync(void *file_args)
     /quit : quitter le serveur : retourne -1
     /list : lister les utilisateurs connectés : retourne 0
     /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
-    En cas d'erreur, retourne 0
+    En cas d'erreur critique, retourne-1
+    si pas de commande, retourne 1
 */
 int CommandsManager(char *msg, int index_client)
 {
@@ -222,10 +242,10 @@ int CommandsManager(char *msg, int index_client)
         {
             return -1;
         }
-        else if (strncmp(msg, "/list", sizeof(char) * 5) == 0)
+        else if (strncmp(msg, "/listallusers", sizeof(char) * 13) == 0)
         {
             // return all the users to the client
-            char *list = malloc(sizeof(char) * (MAX_LENGTH * (PSEUDO_LENGTH + 2) + 1));
+            char *list = malloc(sizeof(char) * (MAX_LENGTH + 1));
             pthread_mutex_lock(&mutex_clients);
             /* début section critique */
             for (int i = 0; i < MAX_CLIENTS; i++)
@@ -243,6 +263,74 @@ int CommandsManager(char *msg, int index_client)
                 printf("❗ ERROR : send \n");
                 return -1;
             }
+            return 0;
+        }
+        else if (strncmp(msg, "/listusers", sizeof(char)*12) == 0){
+            // return all the users to the client
+            char *list = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            pthread_mutex_lock(&mutex_clients);
+
+            sprintf(list, "Users in channel %d: ", clients[index_client].channel);
+            /* début section critique */
+            for (int i = 0; i < MAX_CLIENTS; i++)
+            {
+                if (clients[i].dSC != -1 && clients[i].channel == clients[index_client].channel)
+                {
+                    strcat(list, clients[i].pseudo);
+                    strcat(list, " ");
+                }
+            }
+            /* fin section critique */
+            pthread_mutex_unlock(&mutex_clients);
+            if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/changechannel", sizeof(char) * 14) == 0){
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, "\0");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            int channel = atoi(str_token);
+            clients[index_client].channel = channel;
+            return 0;
+        }
+        else if (strncmp(msg, "/getchannel", sizeof(char) * 11) == 0) {
+            int channel = clients[index_client].channel;
+            char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            sprintf(str, "%d", channel);
+            if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/all", sizeof(char) * 4) == 0){
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, "\0");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            broadcastMessage(index_client, str_token);
             return 0;
         }
         else if (strncmp(msg, "/mp", sizeof(char) * 3) == 0)
@@ -440,7 +528,7 @@ void *client(void *ind)
         int command_status = CommandsManager(msg, index_client);
         if (command_status == 1) // then it's a message to broadcast
         {
-            broadcastMessage(index_client, msg);
+            sendMessageInChannel(index_client, msg, clients[index_client].channel);
         }
         else if (command_status == -1)
         {
@@ -582,6 +670,7 @@ int main(int argc, char *argv[])
                 }
                 clients[ind].dSF = dSF;
                 printf("dSF = %d\n", clients[ind].dSF);
+                clients[ind].channel = 0;
                 trouve = 0;
             }
             else
