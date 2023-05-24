@@ -11,9 +11,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include "header.h"
+
 #define MAX_CLIENTS 2
 #define MAX_LENGTH 100
-#define PSEUDO_LENGTH 20
 #define PATH "./files_Server"
 #define CHUNK_SIZE 512
 
@@ -28,15 +29,6 @@ typedef struct
     int size;
     int index_sender;
 } file_info;
-
-// structure of users
-typedef struct
-{
-    int dSC;
-    int dSF;
-    char pseudo[PSEUDO_LENGTH];
-    int channel;
-} clientConnecte;
 
 // array of clients
 clientConnecte clients[MAX_CLIENTS];
