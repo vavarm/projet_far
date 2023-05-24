@@ -11,31 +11,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#define MAX_CLIENTS 2
-#define MAX_LENGTH 100
-#define PSEUDO_LENGTH 20
-#define PATH "./files_Server"
-#define CHUNK_SIZE 512
-
+#include "header.h"
 
 int dsFiles;
 volatile sig_atomic_t keepRunning = true;
-
-// structure of files
-typedef struct
-{
-    char filename[MAX_LENGTH];
-    int size;
-    int index_sender;
-} file_info;
-
-// structure of users
-typedef struct
-{
-    int dSC;
-    int dSF;
-    char pseudo[PSEUDO_LENGTH];
-} clientConnecte;
 
 // array of clients
 clientConnecte clients[MAX_CLIENTS];
@@ -130,7 +109,7 @@ void *receiveFileAsync(void* file_args){
     char* path = malloc(sizeof(char) * (MAX_LENGTH + 1));
     int size_received = 0;
     char *block = malloc(CHUNK_SIZE);
-    sprintf(path, "%s/%s", PATH, file->filename);
+    sprintf(path, "%s/%s", PATH_SERVER_FILES, file->filename);
     fp = fopen(path, "a");
     int received = 0;
     while(size_received < file->size){
@@ -161,7 +140,7 @@ void *sendFileAsync(void *file_args)
     char *path = malloc(sizeof(char) * (MAX_LENGTH + 1));
     int size_sent = 0;
     char *block = malloc(CHUNK_SIZE);
-    sprintf(path, "%s/%s", PATH, file->filename);
+    sprintf(path, "%s/%s", PATH_SERVER_FILES, file->filename);
     fp = fopen(path, "r");
     // verify if the file exists
     if (fp == NULL)
@@ -503,7 +482,7 @@ int main(int argc, char *argv[])
 
     printf("Début programme\n");
 
-    if (mkdir(PATH, 0755) == -1)
+    if (mkdir(PATH_SERVER_FILES, 0755) == -1)
     {
         printf("❗ ERROR : mkdir -- dossier serveur non créé\n");
         printf(" --- peut-être déjà créé\n");
