@@ -42,9 +42,7 @@ def launchServer(port1, port2):
     else:
         print("OS not supported")
 """
-process = subprocess.Popen(
-            "gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True
-        )
+    process = subprocess.Popen("gnome-terminal -- bash -c '" + command + "; exec bash'", shell=True)
 
 # function to launch the client
 
