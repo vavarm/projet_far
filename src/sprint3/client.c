@@ -197,6 +197,7 @@ void *sendThread(void *dS)
             file->index_sender = NULL;
             pthread_t threadReceiveFile;
             pthread_create(&threadReceiveFile, NULL, receiveFileAsync, (void *)file);
+            continue;
         }
         if (send(ds, msg, strlen(msg) + 1, 0) == -1)
         {
