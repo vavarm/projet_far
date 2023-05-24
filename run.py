@@ -105,7 +105,7 @@ def openServerWindow():
     # create a button
 
     connect = tk.Button(
-        window, text="Connect", command=lambda: launchServer(port.get())
+        window, text="Connect", command=lambda: launchServer(port.get(), port2.get())
     )
 
     connect.place(x=200, y=70)
