@@ -135,8 +135,9 @@ void *sendThread(void *dS)
         }
         if (strncmp(msg, "/rm", sizeof(char) * 3) == 0)
         {
-            system("rm -r ./files_Server");
-            system("mkdir ./files_Server");
+            if (send(dS, "/rm", sizeof(char) * 3, 0)==0){
+                printf("❗ ERROR : send \n");
+            }
             continue;
         }
         if (strncmp(msg, "/sendfile", sizeof(char) * 9) == 0)

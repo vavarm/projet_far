@@ -23,10 +23,10 @@ from platform import uname
 # function to launch the server
 
 
-def launchServer(port):
+def launchServer(port1, port2):
     # create a bash command to run the server
 
-    command = ".out/server.o " + port
+    command = ".out/server.o " + port1 + " " + port2
 
     print(command)
 
@@ -46,10 +46,10 @@ def launchServer(port):
 # function to launch the client
 
 
-def launchClient(ip, port):
+def launchClient(ip, port1, port2):
     # create a bash command to run the client
 
-    command = ".out/client.o " + ip + " " + port
+    command = ".out/client.o " + ip + " " + port1 + " " + port2
 
     print(command)
 
