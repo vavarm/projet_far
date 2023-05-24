@@ -8,18 +8,7 @@
 #include <signal.h>
 #include <dirent.h>
 
-#define MAX_LENGTH 100
-#define PSEUDO_LENGTH 20
-#define CHUNK_SIZE 512
-#define FILES_PATH "./files_Client/"
-
-// structure of files
-typedef struct
-{
-    char filename[MAX_LENGTH];
-    int size;
-    int index_sender;
-} file_info;
+#include "header.h"
 
 char pseudo[PSEUDO_LENGTH];
 int dS;
@@ -45,7 +34,7 @@ void *sendFileAsync(void *arg)
     char *filename = (char *)arg;
     printf("filename: %s\n", filename);
     char path[200];
-    sprintf(path, "%s%s", FILES_PATH, filename);
+    sprintf(path, "%s%s", PATH_CLIENT_FILES, filename);
     printf("path: %s\n", path);
     FILE *file = fopen(path, "r");
     if (file == NULL)
@@ -93,7 +82,7 @@ void *receiveFileAsync(void *args){
     int nbBytesReceived = 0;
     char *buffer = malloc(CHUNK_SIZE);
     char path[200];
-    sprintf(path, "%s%s", FILES_PATH, file->filename);
+    sprintf(path, "%s%s", PATH_CLIENT_FILES, file->filename);
     printf("path: %s\n", path);
     FILE *fileReceived = fopen(path, "a");
     while(nbBytesReceived < file->size){
