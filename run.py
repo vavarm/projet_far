@@ -100,7 +100,7 @@ def openServerWindow():
 
     port2.place(x=100, y=40)
 
-    port2.insert(0, "3000")
+    port2.insert(0, "4000")
 
     # create a button
 
