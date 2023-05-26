@@ -113,6 +113,21 @@ char *getPseudoByDSC(int dSC)
  */
 void sendMessageInChannel(int index_sender, char *msg, int channel)
 {
+    char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    strcpy(str, msg);
+    //get timestamp
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char timestamp[20];
+    if(tm.tm_hour < 10 && tm.tm_min < 10)
+        sprintf(timestamp, "[0%d:0%d]", tm.tm_hour, tm.tm_min);
+    else if(tm.tm_hour < 10)
+        sprintf(timestamp, "[0%d:%d]", tm.tm_hour, tm.tm_min);
+    else if(tm.tm_min < 10)
+        sprintf(timestamp, "[%d:0%d]", tm.tm_hour, tm.tm_min);
+    else
+        sprintf(timestamp, "[%d:%d]", tm.tm_hour, tm.tm_min);
+    sprintf(msg, "%s %s : %s", timestamp, clients[index_sender].pseudo, str);
     pthread_mutex_lock(&mutex_clients);
     /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
@@ -139,6 +154,21 @@ void sendMessageInChannel(int index_sender, char *msg, int channel)
  */
 void broadcastMessage(int index_sender, char *msg)
 {
+    char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+    strcpy(str, msg);
+    //get timestamp
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    char timestamp[20];
+    if(tm.tm_hour < 10 && tm.tm_min < 10)
+        sprintf(timestamp, "[0%d:0%d]", tm.tm_hour, tm.tm_min);
+    else if(tm.tm_hour < 10)
+        sprintf(timestamp, "[0%d:%d]", tm.tm_hour, tm.tm_min);
+    else if(tm.tm_min < 10)
+        sprintf(timestamp, "[%d:0%d]", tm.tm_hour, tm.tm_min);
+    else
+        sprintf(timestamp, "[%d:%d]", tm.tm_hour, tm.tm_min);
+    sprintf(msg, "%s %s : %s", timestamp, clients[index_sender].pseudo, str);
     pthread_mutex_lock(&mutex_clients);
     /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
