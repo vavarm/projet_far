@@ -1,3 +1,13 @@
+/**
+ * @file server.c
+ * @author Kylian Thezenas - Valentin Raccaud--Minuzzi -Leo d'Amerval
+ * @brief file containing the server functions for the project FAR of the 6th semester of the engineering cycle of Polytech Montpellier
+ * @date 2023-05-26
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -27,7 +37,11 @@ sem_t semaphore;
 
 // TODO: add a CleanThreads thread that will clean a thread when it's disconnected by disconnectClient() by getting a semaphore and then calling pthread_join() to get the message of pthread_exit() and then release the semaphore
 
-// TODO: add a dissconnect status and use it in pthread_exit()
+/**
+ * @brief add a dissconnect status and use it in pthread_exit()
+ * 
+ * @param index_client 
+ */
 void disconnectClient(int index_client)
 {
     printf("👤 %s disconnected, with dSC = %d\n", clients[index_client].pseudo, clients[index_client].dSC);
@@ -41,11 +55,17 @@ void disconnectClient(int index_client)
     pthread_exit(NULL);
 }
 
+/**
+ * @brief thread that will handle the connection of a client
+ * 
+ * @param pseudo 
+ * @return int (dSC)
+ */
 int getDSCByPseudo(char *pseudo)
 {
     int dSC = -1;
     pthread_mutex_lock(&mutex_clients);
-    /* début section critique */
+    /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         if (strcmp(clients[i].pseudo, pseudo) == 0)
@@ -54,17 +74,23 @@ int getDSCByPseudo(char *pseudo)
             break;
         }
     }
-    /* fin section critique */
+    /* end critical section */
     pthread_mutex_unlock(&mutex_clients);
     return dSC;
 }
 
+/**
+ * @brief Get the Pseudo By DSC object
+ * 
+ * @param dSC 
+ * @return char* 
+ */
 char *getPseudoByDSC(int dSC)
 {
     char *pseudo = malloc(sizeof(char) * (PSEUDO_LENGTH + 1));
     pseudo[0] = '\0';
     pthread_mutex_lock(&mutex_clients);
-    /* début section critique */
+    /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         if (clients[i].dSC == dSC)
@@ -73,15 +99,22 @@ char *getPseudoByDSC(int dSC)
             break;
         }
     }
-    /* fin section critique */
+    /* end critical section */
     pthread_mutex_unlock(&mutex_clients);
     return pseudo;
 }
 
+/**
+ * @brief thread that will handle the connection of a client
+ * 
+ * @param index_sender 
+ * @param msg 
+ * @param channel 
+ */
 void sendMessageInChannel(int index_sender, char *msg, int channel)
 {
     pthread_mutex_lock(&mutex_clients);
-    /* début section critique */
+    /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         if (index_sender != i && clients[i].dSC != -1 && clients[i].channel == channel)
@@ -93,14 +126,21 @@ void sendMessageInChannel(int index_sender, char *msg, int channel)
             }
         }
     }
-    /* fin section critique */
+    /* end critical section */
     pthread_mutex_unlock(&mutex_clients);
 }
 
+
+/**
+ * @brief send message to all clients except the sender
+ * 
+ * @param index_sender 
+ * @param msg 
+ */
 void broadcastMessage(int index_sender, char *msg)
 {
     pthread_mutex_lock(&mutex_clients);
-    /* début section critique */
+    /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
     {
         if (index_sender != i && clients[i].dSC != -1)
@@ -112,10 +152,16 @@ void broadcastMessage(int index_sender, char *msg)
             }
         }
     }
-    /* fin section critique */
+    /* end critical section */
     pthread_mutex_unlock(&mutex_clients);
 }
 
+/**
+ * @brief thread to receive file from a client
+ * 
+ * @param file_args 
+ * @return void* 
+ */
 void *receiveFileAsync(void* file_args){
     file_info *file = (file_info *) file_args;
 
@@ -148,6 +194,12 @@ void *receiveFileAsync(void* file_args){
     printf("file received\n");
 }
 
+/**
+ * @brief thread to send file to a client
+ * 
+ * @param file_args 
+ * @return void* 
+ */
 void *sendFileAsync(void *file_args)
 {
     file_info *file = (file_info *)file_args;
@@ -205,14 +257,17 @@ void *sendFileAsync(void *file_args)
     printf("file sent\n");
 }
 
-/*
-    Commandes:
-    /quit : quitter le serveur : retourne -1
-    /list : lister les utilisateurs connectés : retourne 0
-    /mp <pseudo> <message> : envoyer un message privé à un utilisateur : retourne 0
-    En cas d'erreur critique, retourne-1
-    si pas de commande, retourne 1
-*/
+/**
+ * @brief function that manage commands send by clients
+ * Commandes:
+    /quit : quit server : return -1
+    if success on other command : return 0
+    if error : return -1
+    if no command : return 1
+ * @param msg index_client 
+ * @return void* 
+ */
+
 int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
@@ -251,7 +306,7 @@ int CommandsManager(char *msg, int index_client)
             // return all the users to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH + 1));
             pthread_mutex_lock(&mutex_clients);
-            /* début section critique */
+            /* critical section */
             for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (clients[i].dSC != -1)
@@ -260,7 +315,7 @@ int CommandsManager(char *msg, int index_client)
                     strcat(list, " ");
                 }
             }
-            /* fin section critique */
+            /* end critical section */
             pthread_mutex_unlock(&mutex_clients);
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
@@ -275,7 +330,7 @@ int CommandsManager(char *msg, int index_client)
             pthread_mutex_lock(&mutex_clients);
 
             sprintf(list, "Users in channel %d: ", clients[index_client].channel);
-            /* début section critique */
+            /* critical section */
             for (int i = 0; i < MAX_CLIENTS; i++)
             {
                 if (clients[i].dSC != -1 && clients[i].channel == clients[index_client].channel)
@@ -284,7 +339,7 @@ int CommandsManager(char *msg, int index_client)
                     strcat(list, " ");
                 }
             }
-            /* fin section critique */
+            /* end critical section */
             pthread_mutex_unlock(&mutex_clients);
             if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
             {
@@ -340,7 +395,6 @@ int CommandsManager(char *msg, int index_client)
         else if (strncmp(msg, "/mp", sizeof(char) * 3) == 0)
         {
             // get the user to send the message to
-            // TODO: check if the user exists and send an error message if not
             char *message_copy = malloc(sizeof(char) * (MAX_LENGTH + 1));
             char *private_message = malloc(sizeof(char) * (MAX_LENGTH + 1));
             strcpy(message_copy, msg);
@@ -473,7 +527,13 @@ int CommandsManager(char *msg, int index_client)
     }
     return 1;
 }
-
+/**
+ * @brief thread function for the client connection
+ * collect the pseudo and the dSC of the client
+ * 
+ * @param ind 
+ * @return void* 
+ */
 void *client(void *ind)
 {
     int index_client = (int)ind; // cast dSc into int
@@ -490,7 +550,7 @@ void *client(void *ind)
         printf("|---- pseudo -> %s\n", pseudo);
         printf("|---- taille pseudo -> %ld\n", strlen(pseudo));
         pthread_mutex_lock(&mutex_clients);
-        /* début section critique */
+        /* critical section */
         for (int i = 0; i < MAX_CLIENTS; i++)
         {
             if (strcmp(pseudo, (clients[i].pseudo)) == 0 || strcmp(pseudo, "server") == 0 || strcmp(pseudo, "Server") == 0 || strcmp(pseudo, "SERVER") == 0 || strcmp(pseudo, "all") == 0 || strcmp(pseudo, "All") == 0 || strcmp(pseudo, "ALL") == 0 || strcmp(pseudo, "broadcast") == 0 || strcmp(pseudo, "Broadcast") == 0 || strcmp(pseudo, "BROADCAST") == 0 || strcmp(pseudo, "me") == 0 || strcmp(pseudo, "ME") == 0 || strlen(pseudo) == 0)
@@ -504,7 +564,7 @@ void *client(void *ind)
                 }
             }
         }
-        /* fin section critique */
+        /* end critical section */
         pthread_mutex_unlock(&mutex_clients);
         if (error == 0)
         {
@@ -523,7 +583,6 @@ void *client(void *ind)
 
     while (keepRunning)
     {
-        //printf("index_client: %d, dSC: %d\n", index_client, clients[index_client].dSC);
         if (recv(clients[index_client].dSC, msg, sizeof(char) * (MAX_LENGTH + 1), 0) <= 0)
         {
             printf("❗ ERROR : recv \n");
@@ -539,9 +598,14 @@ void *client(void *ind)
             disconnectClient(index_client);
         }
     }
-    // TODO: shutdown thread by returning a value (do it also in some if statements)
     pthread_exit(NULL);
 }
+
+/**
+ * @brief disconnect the server if the signal CTRL+C is received
+ * 
+ * @param index_client 
+ */
 void signalHandler(int sig)
 {
     if (sig == SIGINT)
@@ -558,12 +622,18 @@ void signalHandler(int sig)
                 break;
             }
         }
-        // TODO: unbind the socket
         printf("👋🏻 Server closed\n");
         exit(0);
     }
 }
 
+/**
+ * @brief main function
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -659,7 +729,7 @@ int main(int argc, char *argv[])
         int ind = 0;
         int trouve = -1;
         pthread_mutex_lock(&mutex_clients);
-        /* début section critique */
+        /* critical section */
         while (ind <= MAX_CLIENTS && trouve == -1)
         {
             if (clients[ind].dSC == -1)
@@ -683,7 +753,7 @@ int main(int argc, char *argv[])
                 ind++;
             }
         }
-        /* fin section critique */
+        /* end critical section */
         pthread_mutex_unlock(&mutex_clients);
 
         printf("Nouvelle conexion provenant de dSC: %d\n", dSC);

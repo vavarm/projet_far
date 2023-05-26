@@ -1,3 +1,13 @@
+/**
+ * @file client.c
+ * @author Kylian Thezenas - Valentin Raccaud--Minuzzi -Leo d'Amerval
+ * @brief file containing the client's functions for the project FAR of the 6th semester of the engineering cycle of Polytech Montpellier
+ * @date 2023-05-26
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,6 +24,11 @@ char pseudo[PSEUDO_LENGTH];
 int dS;
 int dSF;
 
+/**
+ * @brief function to handle the Ctrl+C signal
+ * 
+ * @param sig 
+ */
 void signalHandler(int sig)
 {
     if (sig == SIGINT)
@@ -28,6 +43,13 @@ void signalHandler(int sig)
         exit(0);
     }
 }
+
+/**
+ * @brief function to send file to the server
+ * 
+ * @param arg 
+ * @return void* 
+ */
 void *sendFileAsync(void *arg)
 {
     printf("sendFileAsync\n");
@@ -74,6 +96,12 @@ void *sendFileAsync(void *arg)
     printf("file sent\n");
 }
 
+/**
+ * @brief thread function to receive file from the server
+ * 
+ * @param args 
+ * @return void* 
+ */
 void *receiveFileAsync(void *args){
     file_info *file = (file_info *)args;
     printf("receiveFileAsync\n");
@@ -98,6 +126,12 @@ void *receiveFileAsync(void *args){
     printf("file received\n");
 }
 
+/**
+ * @brief thread function to send messages from the server
+ * 
+ * @param dS 
+ * @return void* 
+ */
 void *sendThread(void *dS)
 {
     int ds = (int)dS;
@@ -208,6 +242,12 @@ void *sendThread(void *dS)
     }
 }
 
+/**
+ * @brief thread function to receive messages from the server
+ * 
+ * @param dS 
+ * @return void* 
+ */
 void *receiveThread(void *dS)
 {
     int ds = (int)dS;
@@ -229,7 +269,13 @@ void *receiveThread(void *dS)
         }
     }
 }
-
+/**
+ * @brief main function
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char *argv[])
 {
 
