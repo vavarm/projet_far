@@ -3,7 +3,11 @@
 /dir :                      list all the files that are registered in the server
 /sendfile <filename> :      send the file specified in parameter to the server
 /receivefile <filename> :   get the file specified in parameter from the server
-/list :                     list all connected users by their pseudo
+/listallusers :             list all connected users by their pseudo
+/listusers :                list all connected users int he same channelo by their pseudo
+/changechannel <id>:        change from the current channel to a specific channel 
+/getchannel :               give the current channel
+/all <message>:             send the <message> to all user in all channel       
 /mp <user> <message> :      send a private message to a user
 /quit :                     disconnect and quit the system
 /rm :                       supprimer le contenu du dossier files_server

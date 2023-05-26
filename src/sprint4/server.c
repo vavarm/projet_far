@@ -325,7 +325,7 @@ int CommandsManager(char *msg, int index_client)
             return 0;
         }
         else if (strncmp(msg, "/listusers", sizeof(char)*12) == 0){
-            // return all the users to the client
+            // return all the users in the channel to the client
             char *list = malloc(sizeof(char) * (MAX_LENGTH + 1));
             pthread_mutex_lock(&mutex_clients);
 
