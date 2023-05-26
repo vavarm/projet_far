@@ -7,7 +7,10 @@
  * 
  */
 
-
+/**
+ * @brief global variable
+ * 
+ */
 #define MAX_CLIENTS 4
 #define MAX_LENGTH 100
 #define PSEUDO_LENGTH 20
@@ -15,14 +18,21 @@
 #define PATH_CLIENT_FILES "./files_Client/"
 #define CHUNK_SIZE 512
 
-// structure of files
+/**
+ * @brief structure of files*
+ * 
+ * 
+ */
 typedef struct{
     char filename[MAX_LENGTH];
     int size;
     int index_sender;
 } file_info;
 
-// structure of users
+/**
+ * @brief structure of client
+ * 
+ */
 typedef struct{
     int dSC;
     int dSF;
