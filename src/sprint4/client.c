@@ -259,14 +259,14 @@ void *receiveThread(void *dS)
             printf("❗ ERROR : recv \n");
             exit(0);
         }
-        printf("\33[2K\r");
-        printf("\t\t\t ");
-        puts(msg);
         if (strncmp(msg, "/quit", sizeof(char) * 5) == 0 && strlen(msg) == 5)
         {
             printf("\t🛑 --- FIN DE CONNEXION --- 🛑\n\n");
             exit(0);
         }
+        printf("\33[2K\r");
+        printf("\t\t\t ");
+        puts(msg);
     }
 }
 /**
