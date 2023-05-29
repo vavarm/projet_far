@@ -5,9 +5,12 @@
 /receivefile <filename> :   get the file specified in parameter from the server
 /listallusers :             list all connected users by their pseudo
 /listusers :                list all connected users int he same channelo by their pseudo
-/changechannel <id>:        change from the current channel to a specific channel 
+/changechannel <id> :       change from the current channel to a specific channel 
+/getchannels :              give all the channels that exists
 /getchannel :               give the current channel
-/all <message>:             send the <message> to all user in all channel       
+/createchannel <name> :     create a channel with the given name
+/deletechannel <name> :     delete a channel with the given name (Warning: the channel "general" can't be deleted)
+/all <message> :            send the <message> to all user in all channel       
 /mp <user> <message> :      send a private message to a user
 /quit :                     disconnect and quit the system
 /rm :                       supprimer le contenu du dossier files_server

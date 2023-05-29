@@ -1,6 +1,6 @@
 /**
  * @file server.c
- * @author Kylian Thezenas - Valentin Raccaud--Minuzzi -Leo d'Amerval
+ * @author Kylian Thezenas - Valentin Racaud--Minuzzi - Leo d'Amerval
  * @brief file containing the server functions for the project FAR of the 6th semester of the engineering cycle of Polytech Montpellier
  * @date 2023-05-26
  * 
@@ -35,10 +35,19 @@ pthread_mutex_t mutex_clients;
 // semaphore that manages the number of clients connected
 sem_t semaphore;
 
+// array of channels
+channel channels[MAX_CHANNELS];
+
+// mutex that protect the array of channels
+pthread_mutex_t mutex_channels;
+
+// semaphore that manages the number of channels
+sem_t semaphore_channels;
+
 // TODO: add a CleanThreads thread that will clean a thread when it's disconnected by disconnectClient() by getting a semaphore and then calling pthread_join() to get the message of pthread_exit() and then release the semaphore
 
 /**
- * @brief add a dissconnect status and use it in pthread_exit()
+ * @brief function that handles the disconnection of a client
  * 
  * @param index_client 
  */
@@ -56,10 +65,192 @@ void disconnectClient(int index_client)
 }
 
 /**
- * @brief thread that will handle the connection of a client
+ * @brief thread function that save the channels in a file (channels.txt) (format: channel_index;channel_name)
+*/
+void *saveChannels(void *arg)
+{
+    // open the file
+    FILE *file = fopen("channels.txt", "w");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    // write the channels in the file
+    pthread_mutex_lock(&mutex_channels);
+    /* critical section */
+    for (int i = 0; i < MAX_CHANNELS; i++)
+    {
+        if (channels[i].name[0] != '\0')
+        {
+            fprintf(file, "%d;%s\n", channels[i].index, channels[i].name);
+        }
+    }
+    /* end critical section */
+    pthread_mutex_unlock(&mutex_channels);
+    // close the file
+    fclose(file);
+    pthread_exit(NULL);
+}
+
+/**
+ * @brief thread function that parse the channels.txt file and put the channels in the array of channels
+*/
+void *parseChannels(void *arg)
+{
+    // open the file
+    FILE *file = fopen("channels.txt", "r");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    // read the file
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    while ((read = getline(&line, &len, file)) != -1)
+    {
+        // get the index and the name of the channel
+        char *index = strtok(line, ";");
+        if(index == NULL) break;
+        char *name = strtok(NULL, "\n");
+        if(name == NULL) break;
+        // add the channel in the array of channels
+        pthread_mutex_lock(&mutex_channels);
+        /* critical section */
+        channels[atoi(index)].index = atoi(index);
+        strcpy(channels[atoi(index)].name, name);
+        /* end critical section */
+        pthread_mutex_unlock(&mutex_channels);
+    }
+    // close the file
+    fclose(file);
+    pthread_exit(NULL);
+}
+
+/**
+ * @brief function that create a new channel (if it doesn't exist) and save the array of channels in the file
+ * @param name the name of the channel
+ * @return index of the channel if it was created, -1 if it already exists
+ */
+int createChannel(char *name)
+{
+    int index = -1;
+    // check if the channel already exists
+    bool exists = false;
+    pthread_mutex_lock(&mutex_channels);
+    /* critical section */
+    for (int i = 0; i < MAX_CHANNELS; i++)
+    {
+        if (strcmp(channels[i].name, name) == 0)
+        {
+            exists = true;
+            break;
+        }
+    }
+    /* end critical section */
+    pthread_mutex_unlock(&mutex_channels);
+    // if the channel doesn't exist
+    if (!exists)
+    {
+        // block the semaphore if the number of channels is equal to MAX_CHANNELS
+        sem_wait(&semaphore_channels);
+        // create the channel
+        pthread_mutex_lock(&mutex_channels);
+        /* critical section */
+        for (int i = 0; i < MAX_CHANNELS; i++)
+        {
+            if (channels[i].name[0] == '\0')
+            {
+                index = i;
+                channels[i].index = i;
+                strcpy(channels[i].name, name);
+                break;
+            }
+        }
+        /* end critical section */
+        pthread_mutex_unlock(&mutex_channels);
+        // save the channels in the file
+        pthread_t thread_saveChannels;
+        pthread_create(&thread_saveChannels, NULL, saveChannels, NULL);
+    }
+    return index;
+}
+
+/**
+ * @brief thread function that delete a channel (if it exists) and save the array of channels in the file
+ * @param name the name of the channel
+ * @return index of the channel if the channel has been deleted, -1 if the channel doesn't exist
+ * @note the channel with index 0 can't be deleted
+*/
+int deleteChannel(char *name)
+{
+    int index = -1;
+    // check if the channel exists
+    bool exists = false;
+    pthread_mutex_lock(&mutex_channels);
+    /* critical section */
+    for (int i = 0; i < MAX_CHANNELS; i++)
+    {
+        if (strcmp(channels[i].name, name) == 0)
+        {
+            exists = true;
+            break;
+        }
+    }
+    /* end critical section */
+    pthread_mutex_unlock(&mutex_channels);
+    // if the channel exists
+    if (exists)
+    {
+        // delete the channel
+        pthread_mutex_lock(&mutex_channels);
+        /* critical section */
+        for (int i = 0; i < MAX_CHANNELS; i++)
+        {
+            if (strcmp(channels[i].name, name) == 0)
+            {
+                index = i;
+                if (index == 0) return 0;
+                else{
+                    //move all the clients of the channel to the default channel
+                    pthread_mutex_lock(&mutex_clients);
+                    /* critical section */
+                    for (int j = 0; j < MAX_CLIENTS; j++)
+                    {
+                        if (clients[j].channel == index)
+                        {
+                            clients[j].channel = 0;
+                            if(send(clients[j].dSC, "You have been moved to the default channel", sizeof(char) * (MAX_LENGTH + 1), 0) == -1){
+                                perror("Error sending message");
+                                disconnectClient(clients[j].dSC);
+                            }
+                        }
+                    }
+                    /* end critical section */
+                    pthread_mutex_unlock(&mutex_clients);
+                    channels[i].name[0] = '\0';
+                    break;
+                }
+            }
+        }
+        /* end critical section */
+        pthread_mutex_unlock(&mutex_channels);
+        // liberate a place in the array of channels
+        sem_post(&semaphore_channels);
+        // save the channels in the file
+        pthread_t thread_saveChannels;
+        pthread_create(&thread_saveChannels, NULL, saveChannels, NULL);
+    }
+    return index;
+}
+
+/**
+ * @brief thread that returns the dSC of the client that has the pseudo given in parameter
  * 
- * @param pseudo 
- * @return int (dSC)
+ * @param pseudo
+ * @return int dSC
  */
 int getDSCByPseudo(char *pseudo)
 {
@@ -80,10 +271,10 @@ int getDSCByPseudo(char *pseudo)
 }
 
 /**
- * @brief Get the Pseudo By DSC object
+ * @brief function that returns the pseudo of the client that has the dSC given in parameter
  * 
- * @param dSC 
- * @return char* 
+ * @param dSC
+ * @return char* pseudo
  */
 char *getPseudoByDSC(int dSC)
 {
@@ -105,11 +296,11 @@ char *getPseudoByDSC(int dSC)
 }
 
 /**
- * @brief thread that will handle the connection of a client
+ * @brief function that send a message to all clients connected on the same channel (except the sender)
  * 
- * @param index_sender 
- * @param msg 
- * @param channel 
+ * @param index_sender the index of the client that sent the message
+ * @param msg the message to send
+ * @param channel the channel where the message will be sent
  */
 void sendMessageInChannel(int index_sender, char *msg, int channel)
 {
@@ -147,10 +338,10 @@ void sendMessageInChannel(int index_sender, char *msg, int channel)
 
 
 /**
- * @brief send message to all clients except the sender
+ * @brief function that send a message to all clients connected (except the sender)
  * 
- * @param index_sender 
- * @param msg 
+ * @param index_sender the index of the client that sent the message
+ * @param msg the message to send
  */
 void broadcastMessage(int index_sender, char *msg)
 {
@@ -189,7 +380,7 @@ void broadcastMessage(int index_sender, char *msg)
 /**
  * @brief thread to receive file from a client
  * 
- * @param file_args 
+ * @param file_args file_info struct that contains the file name, the size and the index of the sender
  * @return void* 
  */
 void *receiveFileAsync(void* file_args){
@@ -227,7 +418,7 @@ void *receiveFileAsync(void* file_args){
 /**
  * @brief thread to send file to a client
  * 
- * @param file_args 
+ * @param file_args file_info struct that contains the file name, the size and the index of the sender
  * @return void* 
  */
 void *sendFileAsync(void *file_args)
@@ -288,16 +479,12 @@ void *sendFileAsync(void *file_args)
 }
 
 /**
- * @brief function that manage commands send by clients
- * Commandes:
-    /quit : quit server : return -1
-    if success on other command : return 0
-    if error : return -1
-    if no command : return 1
- * @param msg index_client 
- * @return void* 
+ * @brief function that manages commands sent by clients
+ * @param msg the message sent by the client
+ * @param index_client the index of the client that sent the message
+ * @return int
+ * Postcondition : return 1 if no command, 0 if success, -1 if error
  */
-
 int CommandsManager(char *msg, int index_client)
 {
     if (msg[0] == '/')
@@ -391,18 +578,156 @@ int CommandsManager(char *msg, int index_client)
                 printf("❗ ERROR : malloc \n");
                 return 0;
             }
+            // check if the channel can exists
             int channel = atoi(str_token);
+            if (channel < 0 || channel >= MAX_CHANNELS)
+            {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel %d does not exist, out of range", channel);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                return 0;
+            }
+            // check if the channel exists (has a name)
+            if (strcmp(channels[channel].name, "\0") == 0)
+            {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel %d does not exist", channel);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                return 0;
+            }
+            // change the channel
             clients[index_client].channel = channel;
+            char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            sprintf(str, "You are now in channel '%s' number %d", channels[channel].name, channel);
+            if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/getchannels", sizeof(char) * 12) == 0) {
+            // send the list of channels to the client (the index and the name)
+            char *list = malloc(sizeof(char) * (MAX_LENGTH + 1));
+            /* critical section */
+            pthread_mutex_lock(&mutex_channels);
+            sprintf(list, "Channels: ");
+            for(int i = 0; i < MAX_CHANNELS; i++) {
+                if (strcmp(channels[i].name, "\0") != 0) {
+                    printf("channel %d: %s\n", i, channels[i].name);
+                    char *previous = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                    strcpy(previous, list);
+                    sprintf(list, "%s %d:%s ", previous, i, channels[i].name);
+                }
+            }
+            pthread_mutex_unlock(&mutex_channels);
+            /* end critical section */
+            printf("list: %s\n", list);
+            if (send(clients[index_client].dSC, list, strlen(list) + 1, 0) <= 0)
+            {
+                printf("❗ ERROR : send \n");
+                return -1;
+            }
             return 0;
         }
         else if (strncmp(msg, "/getchannel", sizeof(char) * 11) == 0) {
             int channel = clients[index_client].channel;
             char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
-            sprintf(str, "%d", channel);
+            sprintf(str, "You are in channel '%s' with number %d", channels[channel].name, channel);
             if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
             {
                 printf("❗ ERROR : send \n");
                 return -1;
+            }
+            return 0;
+        }
+        else if (strncmp(msg, "/createchannel", sizeof(char) * 14) == 0){
+            // get the name of the channel
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, "\0");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            // call the function to create the channel
+            int channel = createChannel(str_token);
+            if (channel == -1) {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel '%s' already exists", str_token);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                return 0;
+            }
+            else {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel '%s' created with success with number %d", str_token, channel);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                return 0;
+            }
+        }
+        else if (strncmp(msg, "/deletechannel", sizeof(char) * 14) == 0){
+            // get the name of the channel
+            char *str_token = strtok(msg, " ");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            str_token = strtok(NULL, "\0");
+            if (str_token == NULL)
+            {
+                printf("❗ ERROR : malloc \n");
+                return 0;
+            }
+            // call the function to delete the channel
+            int channel = deleteChannel(str_token);
+            if (channel == -1) {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel '%s' does not exist", str_token);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+            }
+            else if (channel == 0){
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "You can't delete the channel 'general'");
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+            }
+            else {
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                sprintf(str, "Channel '%s' deleted with success with number %d", str_token, channel);
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
             }
             return 0;
         }
@@ -561,7 +886,7 @@ int CommandsManager(char *msg, int index_client)
  * @brief thread function for the client connection
  * collect the pseudo and the dSC of the client
  * 
- * @param ind 
+ * @param ind the index of the client
  * @return void* 
  */
 void *client(void *ind)
@@ -634,7 +959,7 @@ void *client(void *ind)
 /**
  * @brief disconnect the server if the signal CTRL+C is received
  * 
- * @param index_client 
+ * @param int
  */
 void signalHandler(int sig)
 {
@@ -738,8 +1063,38 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // init semaphore
+    // init semaphore of MAX_CLIENTS
     sem_init(&semaphore, 0, MAX_CLIENTS);
+
+    // init semaphore of MAX_CHANNELS
+    sem_init(&semaphore_channels, 0, MAX_CHANNELS);
+
+    // init channels to default values
+    for (int i = 1; i < MAX_CHANNELS; i++)
+    {
+        strcpy(channels[i].name, "\0");
+        channels[i].index = i;
+    }
+
+    // parse the file of channels
+    pthread_t thread_parse_channels;
+    pthread_create(&thread_parse_channels, NULL, parseChannels, NULL);
+    pthread_join(thread_parse_channels, NULL);
+
+    // if the channel general doesn't exist, create it
+    if (channels[0].name == '\0')
+    {
+        strcpy(channels[0].name, "general");
+        channels[0].index = 0;
+    }
+
+    // print the channels
+    printf("Liste des channels :\n");
+    for (int i = 0; i < MAX_CHANNELS; i++)
+    {
+        if(channels[i].name[0] != '\0')
+        printf("Channel %d : %s\n", channels[i].index, channels[i].name);
+    }
 
     printf("En attente de connexion\n");
     printf("... \n");

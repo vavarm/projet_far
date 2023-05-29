@@ -1,6 +1,6 @@
 /**
  * @file client.c
- * @author Kylian Thezenas - Valentin Raccaud--Minuzzi -Leo d'Amerval
+ * @author Kylian Thezenas - Valentin Racaud--Minuzzi - Leo d'Amerval
  * @brief file containing the client's functions for the project FAR of the 6th semester of the engineering cycle of Polytech Montpellier
  * @date 2023-05-26
  * 
@@ -45,9 +45,9 @@ void signalHandler(int sig)
 }
 
 /**
- * @brief function to send file to the server
+ * @brief function to send a file to the server
  * 
- * @param arg 
+ * @param arg the filename
  * @return void* 
  */
 void *sendFileAsync(void *arg)
@@ -97,9 +97,9 @@ void *sendFileAsync(void *arg)
 }
 
 /**
- * @brief thread function to receive file from the server
+ * @brief thread function to receive a file from the server
  * 
- * @param args 
+ * @param args the file_info struct containing the filename and the size of the file
  * @return void* 
  */
 void *receiveFileAsync(void *args){
@@ -127,9 +127,9 @@ void *receiveFileAsync(void *args){
 }
 
 /**
- * @brief thread function to send messages from the server
+ * @brief thread function to send messages to the server
  * 
- * @param dS 
+ * @param dS the socket descriptor of the server
  * @return void* 
  */
 void *sendThread(void *dS)
@@ -245,7 +245,7 @@ void *sendThread(void *dS)
 /**
  * @brief thread function to receive messages from the server
  * 
- * @param dS 
+ * @param dS the socket descriptor of the server
  * @return void* 
  */
 void *receiveThread(void *dS)
