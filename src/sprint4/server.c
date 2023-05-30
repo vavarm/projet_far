@@ -1087,14 +1087,6 @@ int main(int argc, char *argv[])
         strcpy(channels[i].name, "\0");
         channels[i].index = i;
     }
-    
-    // print the channels
-    printf("Liste des channels :\n");
-    for (int i = 0; i < MAX_CHANNELS; i++)
-    {
-        if(strlen(channels[i].name) > 0)
-        printf("Channel %d : %s\n", channels[i].index, channels[i].name);
-    }
 
     // parse the file of channels
     pthread_t thread_parse_channels;
