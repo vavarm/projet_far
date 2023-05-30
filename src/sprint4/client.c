@@ -286,6 +286,13 @@ int main(int argc, char *argv[])
     }
 
     printf("Début programme\n");
+
+    if (mkdir(PATH_CLIENT_FILES, 0755) == -1)
+    {
+        printf("❗ ERROR : mkdir -- dossier client non créé\n");
+        printf(" --- peut-être déjà créé\n");
+    }
+
     dS = socket(PF_INET, SOCK_STREAM, 0);
     printf("Socket Créé\n");
 
