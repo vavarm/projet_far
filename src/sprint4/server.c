@@ -102,8 +102,16 @@ void *parseChannels(void *arg)
     FILE *file = fopen("channels.txt", "r");
     if (file == NULL)
     {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
+        perror("Error opening channels.txt file");
+        printf("Creating the file channels.txt\n");
+        file = fopen("channels.txt", "w");
+        if (file == NULL)
+        {
+            perror("Error opening file");
+            exit(EXIT_FAILURE);
+        }
+        fclose(file);
+        file = fopen("channels.txt", "r");
     }
     // read the file
     char *line = NULL;
@@ -204,6 +212,7 @@ int deleteChannel(char *name)
     // if the channel exists
     if (exists)
     {
+        printf("Deleting channel %s\n", name);
         // delete the channel
         pthread_mutex_lock(&mutex_channels);
         /* critical section */
@@ -212,7 +221,10 @@ int deleteChannel(char *name)
             if (strcmp(channels[i].name, name) == 0)
             {
                 index = i;
-                if (index == 0) return 0;
+                if (index == 0){
+                    pthread_mutex_unlock(&mutex_channels);
+                    return 0;
+                }
                 else{
                     //move all the clients of the channel to the default channel
                     pthread_mutex_lock(&mutex_clients);
@@ -1075,6 +1087,14 @@ int main(int argc, char *argv[])
         strcpy(channels[i].name, "\0");
         channels[i].index = i;
     }
+    
+    // print the channels
+    printf("Liste des channels :\n");
+    for (int i = 0; i < MAX_CHANNELS; i++)
+    {
+        if(strlen(channels[i].name) > 0)
+        printf("Channel %d : %s\n", channels[i].index, channels[i].name);
+    }
 
     // parse the file of channels
     pthread_t thread_parse_channels;
@@ -1082,11 +1102,16 @@ int main(int argc, char *argv[])
     pthread_join(thread_parse_channels, NULL);
 
     // if the channel general doesn't exist, create it
-    if (channels[0].name == '\0')
+    if (strlen(channels[0].name) == 0)
     {
         strcpy(channels[0].name, "general");
         channels[0].index = 0;
     }
+
+    // save the channels in the file
+    pthread_t thread_save_channels;
+    pthread_create(&thread_save_channels, NULL, saveChannels, NULL);
+    pthread_join(thread_save_channels, NULL);
 
     // print the channels
     printf("Liste des channels :\n");
