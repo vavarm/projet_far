@@ -796,24 +796,28 @@ int CommandsManager(char *msg, int index_client)
             }
             return 0;
         }else if (strncmp(msg, "/dir", sizeof(char) * 4) == 0){
-                struct dirent *dir;
-                DIR *d = opendir("./files_Server"); 
-                if (d)
+                FILE *file = popen("ls -1 ./files_Server", "r");
+                if (file == NULL)
                 {
-                    while ((dir = readdir(d)) != NULL)
-                    {
-                        char* str = malloc(sizeof(char) * (MAX_LENGTH + 1));
-                        strcpy(str, dir->d_name);
-                        strcat(str, "\n");
-                        if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
-                        {
-                            printf("❗ ERROR : send /dir\n");
-                            return -1;
-                        }
-                        sleep(0.1);
-                    }
-                    closedir(d);
+                    printf("❗ ERROR : popen \n");
+                    return -1;
                 }
+                char *str = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                char *line = malloc(sizeof(char) * (MAX_LENGTH + 1));
+                strcpy(str, "Liste des fichiers sur le serveur : ");
+                while (fgets(line, MAX_LENGTH, file) != NULL)
+                {
+                    if(line[strlen(line) - 1] == '\n')
+                        line[strlen(line) - 1] = '\0';
+                    strcat(str, " ");
+                    strcat(str, line);
+                }
+                if (send(clients[index_client].dSC, str, strlen(str) + 1, 0) <= 0)
+                {
+                    printf("❗ ERROR : send \n");
+                    return -1;
+                }
+                pclose(file);
                 return 0;
         } else if (strncmp(msg, "/sendfile", sizeof(char)* 9) == 0){
             
