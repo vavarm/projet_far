@@ -371,7 +371,7 @@ void broadcastMessage(int index_sender, char *msg)
         sprintf(timestamp, "[%d:0%d]", tm.tm_hour, tm.tm_min);
     else
         sprintf(timestamp, "[%d:%d]", tm.tm_hour, tm.tm_min);
-    sprintf(msg, "%s %s : %s", timestamp, clients[index_sender].pseudo, str);
+    sprintf(msg, "[BROADCAST] %s %s : %s", timestamp, clients[index_sender].pseudo, str);
     pthread_mutex_lock(&mutex_clients);
     /* critical section */
     for (int i = 0; i < MAX_CLIENTS; i++)
