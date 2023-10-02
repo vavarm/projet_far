@@ -36,7 +36,7 @@ You can also use the python launcher ``run.py`` to start servers and clients. It
 - examples: Some dev examples
 - src/sprint.: The source files of the different states of the project. The final project is in ``src/sprint.4``
 - files_Client: The folder that contains the files the client can send to the server
-- files_Server: The folder that contains the files the server can send to the client*
+- files_Server: The folder that contains the files the server can send to the clients
 - run.py: The python launcher
 - channels.txt: The file that contains the channels of the server
 - manual.txt: The file that contains the list of commands usable by the client
